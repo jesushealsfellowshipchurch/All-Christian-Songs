@@ -1,6 +1,6 @@
 // Instant Client-side Search and Filter Engine
 
-export function filterSongs(songs, { query = '', language = 'all', filterType = 'all', songbook = null, alphabet = null }) {
+export function filterSongs(songs, { query = '', language = 'all', filterType = 'all', songbook = null, alphabet = null, category = null }) {
   if (!songs || !Array.isArray(songs)) return [];
 
   const cleanQuery = query.trim().toLowerCase();
@@ -28,6 +28,16 @@ export function filterSongs(songs, { query = '', language = 'all', filterType = 
         return false;
       });
       if (!match) return false;
+    }
+
+    // 3.5. Category Filter
+    if (category) {
+      const target = category.toLowerCase().replace(/ songs$/, '').trim();
+      const hasCat = song.cats && song.cats.some(c => {
+        const clean = c.toLowerCase().replace(/ songs$/, '').trim();
+        return clean === target || clean.includes(target) || target.includes(clean);
+      });
+      if (!hasCat) return false;
     }
 
     // 4. Alphabetical Filter (Supports both Telugu and English letters)

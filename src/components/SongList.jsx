@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles } from 'lucide-react';
+import BrowseByCategory from './BrowseByCategory';
 import BrowseByLetter from './BrowseByLetter';
 
 const PAGE_SIZE = 36;
@@ -13,14 +14,17 @@ export default function SongList({
   setAlphabet,
   activeSongbook,
   onClearSongbook,
-  currentLanguage = 'all'
+  currentLanguage = 'all',
+  activeCategory,
+  onSelectCategory,
+  allSongs = []
 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Reset to page 1 when songs array changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [songs.length, alphabet, activeSongbook]);
+  }, [songs.length, alphabet, activeCategory, activeSongbook]);
 
   const totalPages = Math.ceil(songs.length / PAGE_SIZE) || 1;
   const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -45,7 +49,14 @@ export default function SongList({
         </div>
       )}
 
-      {/* Browse by Letter (Telugu Aksharamulu & English Alphabet) */}
+      {/* Browse by Category */}
+      <BrowseByCategory
+        songs={allSongs.length > 0 ? allSongs : songs}
+        activeCategory={activeCategory}
+        onSelectCategory={onSelectCategory}
+      />
+
+      {/* Browse by Letter (Telugu Aksharamulu, English & Hindi) */}
       <BrowseByLetter
         activeLetter={alphabet}
         onSelectLetter={setAlphabet}

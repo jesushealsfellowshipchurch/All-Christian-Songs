@@ -16,6 +16,7 @@ export default function App() {
   const [language, setLanguage] = useState('all');
   const [filterType, setFilterType] = useState('all'); // 'all' | 'chords' | 'video' | 'ppt'
   const [alphabet, setAlphabet] = useState(null);
+  const [category, setCategory] = useState(null);
   const [activeSongbook, setActiveSongbook] = useState(null);
   
   // Active states
@@ -61,15 +62,17 @@ export default function App() {
       language,
       filterType,
       songbook: activeSongbook?.slug,
-      alphabet
+      alphabet,
+      category
     });
-  }, [songs, searchQuery, language, filterType, activeSongbook, alphabet]);
+  }, [songs, searchQuery, language, filterType, activeSongbook, alphabet, category]);
 
   const handleSelectSongbook = (book) => {
     setActiveSongbook(book);
     setFilterType('all');
     setSearchQuery('');
     setAlphabet(null);
+    setCategory(null);
   };
 
   return (
@@ -117,6 +120,9 @@ export default function App() {
                 activeSongbook={activeSongbook}
                 onClearSongbook={() => setActiveSongbook(null)}
                 currentLanguage={language}
+                activeCategory={category}
+                onSelectCategory={setCategory}
+                allSongs={songs}
               />
             </div>
 
