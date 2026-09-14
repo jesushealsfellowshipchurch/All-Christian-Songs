@@ -210,22 +210,22 @@ export default function Header({
               </div>
 
               {/* Desktop Navigation Links Pill */}
-              <nav className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 shadow-inner">
+              <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 px-2 py-1 rounded-full bg-slate-900/80 border border-slate-800 shadow-inner shrink-0">
                 <button
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-slate-800 shadow-sm transition"
+                  className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-slate-800 shadow-sm transition"
                 >
                   Home
                 </button>
                 <button
                   onClick={() => scrollToSection('songs-catalog')}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   Songs
                 </button>
                 <button
                   onClick={() => scrollToSection('categories-section')}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   Categories
                 </button>
@@ -240,10 +240,10 @@ export default function Header({
                 */}
                 <button
                   onClick={onOpenFavorites}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
+                  className="px-2.5 xl:px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
                 >
-                  <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
-                  <span>Favorites</span>
+                  <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400 shrink-0" />
+                  <span className="hidden xl:inline">Favorites</span>
                   {favoritesCount > 0 && (
                     <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
                       {favoritesCount}
@@ -252,16 +252,16 @@ export default function Header({
                 </button>
                 <button
                   onClick={onOpenAbout}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   About
                 </button>
               </nav>
 
               {/* Desktop Search Input with Suggestions Dropdown */}
-              <div ref={desktopSearchContainerRef} className="hidden md:block relative max-w-xs lg:max-w-sm flex-1 mx-2">
+              <div ref={desktopSearchContainerRef} className="hidden md:block relative min-w-[180px] lg:min-w-[200px] xl:min-w-[260px] max-w-xs lg:max-w-sm flex-1 mx-2">
                 <div className="relative flex items-center">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400 pointer-events-none" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400/90 pointer-events-none" />
                   <input
                     ref={desktopSearchInputRef}
                     type="text"
@@ -272,7 +272,7 @@ export default function Header({
                     }}
                     onFocus={() => setIsDropdownOpen(true)}
                     placeholder="Search songs or number..."
-                    className="w-full pl-9.5 pr-8 py-1.5 text-xs sm:text-sm bg-slate-900/90 border border-slate-700/80 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-inner transition"
+                    className="w-full pl-10 pr-8 py-2 text-xs sm:text-sm bg-slate-900/90 border border-slate-700/80 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-inner transition leading-normal"
                   />
                   {searchQuery && (
                     <button

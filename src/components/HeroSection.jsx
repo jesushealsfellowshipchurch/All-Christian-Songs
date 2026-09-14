@@ -102,7 +102,10 @@ export default function HeroSection({
           </div>
 
           {/* Center Main Titles */}
-          <div className="lg:col-span-8 text-center px-1 sm:px-2">
+          <div className="lg:col-span-8 text-center px-1 sm:px-2 relative">
+            {/* Soft celestial radial backlight behind the title */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-24 bg-amber-400/10 blur-2xl rounded-full pointer-events-none -z-10" />
+
             {/* Mobile-only compact scriptural verses badge to save space */}
             <div className="lg:hidden flex items-center justify-center gap-2 text-[11px] sm:text-xs font-script text-amber-200/80 mb-2">
               <span>Sing to the Lord (Ps 96:1)</span>
@@ -110,19 +113,19 @@ export default function HeroSection({
               <span>He is Risen (Mt 28:6)</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-telugu-serif font-bold sm:font-extrabold not-italic text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-yellow-500 drop-shadow-[0_4px_22px_rgba(245,158,11,0.45)] tracking-wide leading-normal py-1 sm:whitespace-nowrap">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-timmana not-italic text-transparent bg-clip-text bg-gradient-to-b from-amber-50 via-amber-200 to-amber-600 drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] drop-shadow-[0_0_24px_rgba(245,158,11,0.45)] tracking-wide leading-normal py-1 sm:whitespace-nowrap select-none">
               సార్వత్రిక క్రైస్తవ కీర్తనలు
             </h1>
-            <h2 className="mt-0.5 sm:mt-1 text-base sm:text-xl md:text-2xl font-semibold tracking-wide text-white drop-shadow-md">
+            <h2 className="mt-0.5 sm:mt-1 text-base sm:text-xl md:text-2xl font-cinzel font-semibold tracking-wider text-amber-100/95 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">
               All Christian Songs
             </h2>
-            <p className="mt-2 text-[11px] sm:text-xs font-medium tracking-widest uppercase text-amber-200/80 flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
+            <p className="mt-2 text-[10px] sm:text-xs font-medium tracking-[0.2em] uppercase text-amber-200/80 flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
               <span>Discover</span>
-              <span className="text-gold-500">•</span>
+              <span className="text-amber-400/60">•</span>
               <span>Worship</span>
-              <span className="text-gold-500">•</span>
+              <span className="text-amber-400/60">•</span>
               <span>Sing</span>
-              <span className="text-gold-500">•</span>
+              <span className="text-amber-400/60">•</span>
               <span>Share His Love</span>
             </p>
           </div>

@@ -36,6 +36,8 @@ export default {
         telugu: ['"Noto Sans Telugu"', 'system-ui', 'sans-serif'],
         'telugu-serif': ['"Noto Serif Telugu"', 'Georgia', 'serif'],
         'telugu-sans': ['"Noto Sans Telugu"', 'sans-serif'],
+        akaya: ['"Akaya Telivigala"', '"Noto Sans Telugu"', 'cursive'],
+        peddana: ['"Peddana"', '"Noto Serif Telugu"', 'serif'],
         timmana: ['"Timmana"', '"Noto Sans Telugu"', 'sans-serif'],
         dhurjati: ['"DhurjatiCustom"', '"Dhurjati"', '"Noto Sans Telugu"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'Consolas', 'monospace'],
