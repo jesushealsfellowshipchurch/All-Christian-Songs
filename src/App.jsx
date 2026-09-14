@@ -86,11 +86,14 @@ export default function App() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         totalCount={songs.length}
+        filteredCount={filteredSongs.length}
         onOpenSongbooks={() => setIsSongbooksOpen(true)}
+        quickResults={filteredSongs}
+        onSelectSong={(song) => setSelectedSong(song)}
       />
 
       {/* Main Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 text-slate-400">
             <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -116,9 +119,9 @@ export default function App() {
               />
             </div>
 
-            {/* Song Detail (right column on desktop or modal on mobile) */}
+            {/* Song Detail (right column on desktop or full screen on mobile) */}
             {selectedSong && (
-              <div className="lg:col-span-7 xl:col-span-7 lg:sticky lg:top-36 lg:h-[calc(100vh-10rem)] fixed inset-0 lg:static z-40 bg-white dark:bg-slate-900 lg:bg-transparent lg:dark:bg-transparent p-4 lg:p-0">
+              <div className="lg:col-span-7 xl:col-span-7 lg:sticky lg:top-36 lg:h-[calc(100vh-10rem)] fixed inset-0 lg:static z-40 bg-slate-50 dark:bg-slate-950 lg:bg-transparent lg:dark:bg-transparent p-0 lg:p-0 overflow-hidden flex flex-col">
                 <SongDetail
                   songSummary={selectedSong}
                   onClose={() => setSelectedSong(null)}

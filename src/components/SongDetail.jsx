@@ -74,18 +74,51 @@ export default function SongDetail({
   if (!songSummary) return null;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-full">
+    <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl border-0 sm:border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-full">
       
-      {/* Top Header Bar */}
-      <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
+      {/* Mobile Top Navigation Bar */}
+      <div className="sm:hidden px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900 sticky top-0 z-20">
+        <button
+          onClick={onClose}
+          className="px-3 py-1.5 text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-750 rounded-xl flex items-center gap-1.5 font-bold text-xs transition active:scale-95 shadow-xs"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Songs</span>
+        </button>
+
+        <div className="flex items-center gap-1">
+          {/* Presentation Mode */}
+          <button
+            onClick={() => onOpenPresentation(song)}
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Presentation Mode"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+
+          {/* Copy Lyrics */}
+          <button
+            onClick={handleCopy}
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Copy"
+          >
+            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+          </button>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Song Header (Desktop + Mobile Body) */}
+      <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-slate-50/70 dark:bg-slate-900/70">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <button
-              onClick={onClose}
-              className="sm:hidden -ml-2 p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300">
               {song?.language || songSummary.lang}
             </span>
@@ -102,12 +135,12 @@ export default function SongDetail({
             })()}
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">
+          <h2 className="text-2xl sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">
             {song?.title || songSummary.t}
           </h2>
 
           {(song?.title_transliterated || songSummary.tr) && (
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
               {song?.title_transliterated || songSummary.tr}
             </p>
           )}
@@ -117,11 +150,52 @@ export default function SongDetail({
               Composer / Author: {song.author_english || song.author_telugu}
             </p>
           )}
+
+          {/* Mobile Media Controls Bar */}
+          {videoId && (
+            <div className="sm:hidden flex items-center gap-2 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800">
+              <button
+                onClick={() => {
+                  setShowVideo(prev => !prev);
+                  if (onPlayMedia) onPlayMedia(song || songSummary);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition ${
+                  showVideo || activePlayingId === song?.id || activePlayingId === songSummary?.id
+                    ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20'
+                    : 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/40'
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                <span>{showVideo ? 'Hide Video Player' : 'Play YouTube Audio / Video'}</span>
+              </button>
+
+              <a
+                href={`https://www.youtube.com/watch?v=${videoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl text-rose-500 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/40 transition shrink-0"
+                title="Watch directly on YouTube"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+
+              {song?.ppt_url && (
+                <a
+                  href={song.ppt_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/40 transition shrink-0"
+                  title="Download PowerPoint (PPT)"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Action icons */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Audio / Video Play Button */}
+        {/* Desktop Action icons */}
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
           {/* Audio / Video Play Button */}
           {videoId && (
             <div className="flex items-center gap-1">
@@ -336,7 +410,7 @@ export default function SongDetail({
       )}
 
       {/* Main Lyrics / Chords Content Area */}
-      <div className="flex-1 p-6 sm:p-8 overflow-y-auto" style={{ fontSize: `${fontSize}px` }}>
+      <div className="flex-1 p-4 sm:p-8 pb-36 sm:pb-12 overflow-y-auto" style={{ fontSize: `${fontSize}px` }}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
             <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
