@@ -56,7 +56,7 @@ export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLa
         
         {/* Header Strip */}
         <div className="flex items-center justify-between px-3 py-2.5 sm:py-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/40 flex-wrap gap-2">
-          <h2 className="text-xs font-bold text-slate-850 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 leading-normal py-1 m-0">
+          <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 leading-normal py-1 m-0">
             <Grid3X3 className="w-3.5 h-3.5 text-amber-500" />
             <span>Browse by Letter</span>
           </h2>
@@ -126,8 +126,8 @@ export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLa
                   onClick={() => handleLetterClick(letter)}
                   className={`relative w-[34px] h-[34px] sm:w-10 sm:h-10 rounded-lg font-telugu text-sm font-bold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
                     isSelected
-                      ? 'text-white shadow-lg shadow-amber-500/25 scale-110 z-10 ring-1 ring-amber-400/40 bg-gradient-to-br from-amber-500 to-amber-600'
-                      : 'bg-slate-50/90 dark:bg-slate-850/80 text-slate-750 dark:text-slate-300 border border-slate-200/80 dark:border-slate-750/80 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-400/30 hover:scale-105 hover:shadow-xs'
+                      ? 'text-white shadow-lg shadow-amber-500/25 scale-110 z-10 ring-2 ring-amber-400/60 bg-gradient-to-br from-amber-500 to-amber-600'
+                      : 'bg-slate-100/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 hover:bg-amber-500/15 hover:text-amber-600 dark:hover:bg-amber-500/20 dark:hover:text-amber-300 dark:hover:border-amber-500/50 hover:border-amber-400/50 hover:scale-105 hover:shadow-xs'
                   }`}
                   title={`Songs starting with ${letter}`}
                 >

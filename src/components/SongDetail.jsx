@@ -80,7 +80,7 @@ export default function SongDetail({
       <div className="sm:hidden px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900 sticky top-0 z-20">
         <button
           onClick={onClose}
-          className="px-3 py-1.5 text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-750 rounded-xl flex items-center gap-1.5 font-bold text-xs transition active:scale-95 shadow-xs"
+          className="px-3 py-1.5 text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-xl flex items-center gap-1.5 font-bold text-xs transition active:scale-95 shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Songs</span>
@@ -486,7 +486,7 @@ export default function SongDetail({
             </h4>
             <div className="space-y-3">
               {song.bible_verses.map((v, i) => (
-                <div key={i} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-750 text-xs">
+                <div key={i} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700 text-xs">
                   <strong className="text-brand-600 dark:text-brand-400 block mb-1">{v.reference}</strong>
                   <p className="text-slate-700 dark:text-slate-300 italic">{v.telugu || v.english || v.hindi}</p>
                 </div>
