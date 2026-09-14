@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Grid3X3, Languages, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Grid3X3, ChevronDown } from 'lucide-react';
 
 const TELUGU_LETTERS = [
   'అ', 'ఆ', 'ఇ', 'ఈ', 'ఉ', 'ఊ', 'ఎ', 'ఏ', 'ఐ', 'ఒ', 'ఓ',
@@ -9,18 +9,36 @@ const TELUGU_LETTERS = [
 
 const ENGLISH_LETTERS = [
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+  'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'Y'
 ];
 
-export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLanguage }) {
-  // Default to Telugu letters if site language is Telugu or all, else English
-  const [letterMode, setLetterMode] = useState(currentLanguage === 'english' ? 'english' : 'telugu');
+const HINDI_LETTERS = [
+  'आ', 'इ', 'उ', 'ख', 'च', 'ज', 'झ', 'त', 'द', 'ध', 'न', 'प',
+  'य', 'र', 'ल', 'व', 'स', 'ह'
+];
 
-  const letters = letterMode === 'telugu' ? TELUGU_LETTERS : ENGLISH_LETTERS;
-
-  const handleToggleMode = () => {
-    setLetterMode(prev => (prev === 'telugu' ? 'english' : 'telugu'));
+export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLanguage = 'all' }) {
+  // Determine initial letter mode from currentLanguage
+  const getInitialMode = (lang) => {
+    if (lang === 'hindi') return 'hindi';
+    if (lang === 'english') return 'english';
+    return 'telugu';
   };
+
+  const [letterMode, setLetterMode] = useState(() => getInitialMode(currentLanguage));
+
+  // Sync letter mode when user switches top-level language tabs
+  useEffect(() => {
+    if (currentLanguage === 'hindi') setLetterMode('hindi');
+    else if (currentLanguage === 'english') setLetterMode('english');
+    else if (currentLanguage === 'telugu') setLetterMode('telugu');
+  }, [currentLanguage]);
+
+  // Select active letter array
+  const letters = 
+    letterMode === 'hindi' ? HINDI_LETTERS :
+    letterMode === 'english' ? ENGLISH_LETTERS :
+    TELUGU_LETTERS;
 
   const handleLetterClick = (letter) => {
     if (activeLetter === letter) {
@@ -37,22 +55,49 @@ export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLa
       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
         
         {/* Header Strip */}
-        <div className="flex items-center justify-between px-3 py-2.5 sm:py-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/40">
+        <div className="flex items-center justify-between px-3 py-2.5 sm:py-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/40 flex-wrap gap-2">
           <h2 className="text-xs font-bold text-slate-850 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 leading-normal py-1 m-0">
             <Grid3X3 className="w-3.5 h-3.5 text-amber-500" />
             <span>Browse by Letter</span>
           </h2>
 
           <div className="flex items-center gap-1.5">
-            {/* Toggle Script (Telugu vs English) */}
-            <button
-              onClick={handleToggleMode}
-              className="flex items-center gap-1 text-[11px] font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 rounded-lg px-2.5 py-1.5 text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 leading-4"
-              title={letterMode === 'telugu' ? "Switch to English letters" : "Switch to Telugu letters"}
-            >
-              <Languages className="w-3 h-3" />
-              <span>{letterMode === 'telugu' ? 'తె' : 'En'}</span>
-            </button>
+            {/* Script / Language Switcher Tabs */}
+            <div className="flex items-center p-0.5 bg-slate-200/70 dark:bg-slate-800 rounded-lg text-[11px] font-bold">
+              <button
+                onClick={() => { setLetterMode('telugu'); onSelectLetter(null); }}
+                className={`px-2.5 py-1 rounded-md transition ${
+                  letterMode === 'telugu'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400'
+                }`}
+                title="Telugu letters"
+              >
+                తె
+              </button>
+              <button
+                onClick={() => { setLetterMode('english'); onSelectLetter(null); }}
+                className={`px-2.5 py-1 rounded-md transition ${
+                  letterMode === 'english'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400'
+                }`}
+                title="English letters"
+              >
+                En
+              </button>
+              <button
+                onClick={() => { setLetterMode('hindi'); onSelectLetter(null); }}
+                className={`px-2.5 py-1 rounded-md transition ${
+                  letterMode === 'hindi'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400'
+                }`}
+                title="Hindi letters"
+              >
+                हि
+              </button>
+            </div>
 
             {/* All Reset Button */}
             <button
@@ -72,7 +117,7 @@ export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLa
 
         {/* Letters Grid */}
         <div className="p-2.5 sm:p-3">
-          <div className="flex flex-wrap gap-[5px] sm:gap-1.5">
+          <div className="flex flex-wrap gap-[5px] sm:gap-1.5 animate-fade-in">
             {letters.map((letter) => {
               const isSelected = activeLetter === letter;
               return (
@@ -82,7 +127,7 @@ export default function BrowseByLetter({ activeLetter, onSelectLetter, currentLa
                   className={`relative w-[34px] h-[34px] sm:w-10 sm:h-10 rounded-lg font-telugu text-sm font-bold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
                     isSelected
                       ? 'text-white shadow-lg shadow-amber-500/25 scale-110 z-10 ring-1 ring-amber-400/40 bg-gradient-to-br from-amber-500 to-amber-600'
-                      : 'bg-slate-50/90 dark:bg-slate-850/80 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-750/80 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-400/30 hover:scale-105 hover:shadow-xs'
+                      : 'bg-slate-50/90 dark:bg-slate-850/80 text-slate-750 dark:text-slate-300 border border-slate-200/80 dark:border-slate-750/80 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-400/30 hover:scale-105 hover:shadow-xs'
                   }`}
                   title={`Songs starting with ${letter}`}
                 >
