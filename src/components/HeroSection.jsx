@@ -87,22 +87,22 @@ export default function HeroSection({
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Unified Hero Header Row: Left Calligraphy, Center Title & Subtitle, Right Calligraphy (Saves vertical space) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-4 xl:gap-8 mb-4 sm:mb-6">
+        {/* Unified Hero Header Row: Left Calligraphy, Center Title & Subtitle, Right Calligraphy */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-2 xl:gap-6 mb-4 sm:mb-6">
           
           {/* Left Calligraphy: Sing to the Lord */}
-          <div className="hidden lg:flex flex-col items-start justify-center lg:col-span-3 text-left opacity-90 hover:opacity-100 transition duration-300">
-            <p className="font-script text-3xl xl:text-4xl text-amber-200/90 drop-shadow-md leading-relaxed tracking-wide">
+          <div className="hidden lg:flex flex-col items-start justify-center lg:col-span-2 text-left opacity-90 hover:opacity-100 transition duration-300">
+            <p className="font-script text-2xl xl:text-3xl text-amber-200/90 drop-shadow-md leading-relaxed tracking-wide">
               Sing to the Lord<br />
-              <span className="text-2xl xl:text-3xl text-amber-100/80 pl-3">a new song...</span>
+              <span className="text-xl xl:text-2xl text-amber-100/80 pl-2">a new song...</span>
             </p>
-            <p className="font-serif italic text-xs tracking-widest text-amber-300/70 mt-1 pl-3 uppercase">
+            <p className="font-serif italic text-[11px] tracking-widest text-amber-300/70 mt-1 pl-2 uppercase">
               Psalm 96:1
             </p>
           </div>
 
           {/* Center Main Titles */}
-          <div className="lg:col-span-6 text-center">
+          <div className="lg:col-span-8 text-center px-1 sm:px-2">
             {/* Mobile-only compact scriptural verses badge to save space */}
             <div className="lg:hidden flex items-center justify-center gap-2 text-[11px] sm:text-xs font-script text-amber-200/80 mb-2">
               <span>Sing to the Lord (Ps 96:1)</span>
@@ -110,10 +110,10 @@ export default function HeroSection({
               <span>He is Risen (Mt 28:6)</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-dhurjati italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-gold-400 to-amber-100 drop-shadow-[0_4px_24px_rgba(203,182,130,0.35)] tracking-wide leading-tight sm:leading-snug">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-telugu-serif font-bold sm:font-extrabold not-italic text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-yellow-500 drop-shadow-[0_4px_22px_rgba(245,158,11,0.45)] tracking-wide leading-normal py-1 sm:whitespace-nowrap">
               సార్వత్రిక క్రైస్తవ కీర్తనలు
             </h1>
-            <h2 className="mt-1 sm:mt-1.5 text-base sm:text-xl md:text-2xl font-semibold tracking-wide text-white drop-shadow-md">
+            <h2 className="mt-0.5 sm:mt-1 text-base sm:text-xl md:text-2xl font-semibold tracking-wide text-white drop-shadow-md">
               All Christian Songs
             </h2>
             <p className="mt-2 text-[11px] sm:text-xs font-medium tracking-widest uppercase text-amber-200/80 flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
@@ -128,11 +128,11 @@ export default function HeroSection({
           </div>
 
           {/* Right Calligraphy: He is Risen */}
-          <div className="hidden lg:flex flex-col items-end justify-center lg:col-span-3 text-right opacity-90 hover:opacity-100 transition duration-300">
-            <p className="font-script text-3xl xl:text-4xl text-amber-200/90 drop-shadow-md leading-relaxed tracking-wide">
+          <div className="hidden lg:flex flex-col items-end justify-center lg:col-span-2 text-right opacity-90 hover:opacity-100 transition duration-300">
+            <p className="font-script text-2xl xl:text-3xl text-amber-200/90 drop-shadow-md leading-relaxed tracking-wide">
               He is Risen
             </p>
-            <p className="font-serif italic text-xs tracking-widest text-amber-300/70 mt-1 uppercase">
+            <p className="font-serif italic text-[11px] tracking-widest text-amber-300/70 mt-1 uppercase">
               Matthew 28:6
             </p>
           </div>

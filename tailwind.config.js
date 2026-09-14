@@ -33,7 +33,10 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        telugu: ['"Noto Sans Telugu"', '"Gautami"', 'system-ui', 'sans-serif'],
+        telugu: ['"Noto Sans Telugu"', 'system-ui', 'sans-serif'],
+        'telugu-serif': ['"Noto Serif Telugu"', 'Georgia', 'serif'],
+        'telugu-sans': ['"Noto Sans Telugu"', 'sans-serif'],
+        timmana: ['"Timmana"', '"Noto Sans Telugu"', 'sans-serif'],
         dhurjati: ['"DhurjatiCustom"', '"Dhurjati"', '"Noto Sans Telugu"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'Consolas', 'monospace'],
         script: ['"Great Vibes"', '"Alex Brush"', 'cursive'],
