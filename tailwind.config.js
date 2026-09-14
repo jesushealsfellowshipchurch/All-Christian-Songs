@@ -34,6 +34,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         telugu: ['"Noto Sans Telugu"', '"Gautami"', 'system-ui', 'sans-serif'],
+        dhurjati: ['"DhurjatiCustom"', '"Dhurjati"', '"Noto Sans Telugu"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'Consolas', 'monospace'],
         script: ['"Great Vibes"', '"Alex Brush"', 'cursive'],
         cinzel: ['"Cinzel"', 'Georgia', 'serif'],

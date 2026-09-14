@@ -39,7 +39,7 @@ export default function BrowseByCategory({
   activeCategory,
   onSelectCategory
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Calculate live song count per category
   const counts = useMemo(() => {

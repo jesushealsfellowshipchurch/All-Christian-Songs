@@ -110,7 +110,7 @@ export default function HeroSection({
               <span>He is Risen (Mt 28:6)</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-telugu text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-gold-400 to-amber-100 drop-shadow-[0_4px_24px_rgba(203,182,130,0.35)] tracking-wide leading-tight sm:leading-snug">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-dhurjati italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-gold-400 to-amber-100 drop-shadow-[0_4px_24px_rgba(203,182,130,0.35)] tracking-wide leading-tight sm:leading-snug">
               సార్వత్రిక క్రైస్తవ కీర్తనలు
             </h1>
             <h2 className="mt-1 sm:mt-1.5 text-base sm:text-xl md:text-2xl font-semibold tracking-wide text-white drop-shadow-md">

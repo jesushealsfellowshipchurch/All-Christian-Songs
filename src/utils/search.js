@@ -71,11 +71,18 @@ export function filterSongs(songs, { query = '', language = 'all', filterType = 
 
     return true;
   });
+
+  // Always give first preference to Telugu songs in catalog and filtered views
+  return filtered.sort((a, b) => {
+    const aTe = a.lang === 'telugu' ? 1 : 0;
+    const bTe = b.lang === 'telugu' ? 1 : 0;
+    return bTe - aTe;
+  });
 }
 
 /**
  * Fast, accurate suggestion generator for live autocomplete dropdowns
- * Returns up to maxResults high-confidence matched songs
+ * Returns up to maxResults high-confidence matched songs, with first preference to Telugu songs
  */
 export function getSongSuggestions(songs, query, maxResults = 8) {
   if (!query || !query.trim() || !songs || songs.length === 0) return [];
@@ -123,12 +130,22 @@ export function getSongSuggestions(songs, query, maxResults = 8) {
       }
     }
     
+    // First preference to Telugu songs in suggestions
+    if (score > 0 && s.lang === 'telugu') {
+      score += 350;
+    }
+    
     if (score > 0) {
       matches.push({ song: s, score });
     }
   }
   
-  matches.sort((a, b) => b.score - a.score);
+  matches.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const aTe = a.song.lang === 'telugu' ? 1 : 0;
+    const bTe = b.song.lang === 'telugu' ? 1 : 0;
+    return bTe - aTe;
+  });
   return matches.slice(0, maxResults).map(m => m.song);
 }
 

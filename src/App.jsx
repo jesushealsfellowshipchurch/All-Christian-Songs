@@ -78,7 +78,14 @@ export default function App() {
     fetch('./data/compact_index.json')
       .then((res) => res.json())
       .then((data) => {
-        setSongs(data || []);
+        const loaded = data || [];
+        // By default display Telugu songs starting
+        const sorted = [...loaded].sort((a, b) => {
+          const aTe = a.lang === 'telugu' ? 1 : 0;
+          const bTe = b.lang === 'telugu' ? 1 : 0;
+          return bTe - aTe;
+        });
+        setSongs(sorted);
         setLoading(false);
       })
       .catch((err) => {
