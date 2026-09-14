@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
+import HeroSection from './components/HeroSection';
+import CategoryHeroCards from './components/CategoryHeroCards';
+import PopularSongs from './components/PopularSongs';
 import SongList from './components/SongList';
 import SongDetail from './components/SongDetail';
+import InfoSection from './components/InfoSection';
+import Footer from './components/Footer';
 import MediaPlayer from './components/MediaPlayer';
 import SongbooksModal from './components/SongbooksModal';
 import PresentationModal from './components/PresentationModal';
+import AboutModal from './components/AboutModal';
+import FavoritesModal from './components/FavoritesModal';
 import { filterSongs } from './utils/search';
 
 export default function App() {
@@ -19,11 +26,23 @@ export default function App() {
   const [category, setCategory] = useState(null);
   const [activeSongbook, setActiveSongbook] = useState(null);
   
-  // Active states
+  // Favorites stored in localStorage
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jhf_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (_) {
+      return [];
+    }
+  });
+
+  // Active modal / detail states
   const [selectedSong, setSelectedSong] = useState(null);
   const [activeMedia, setActiveMedia] = useState(null);
   const [presentationSong, setPresentationSong] = useState(null);
   const [isSongbooksOpen, setIsSongbooksOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   
   // Dark mode (default to true for rich stage aesthetic, can toggle)
   const [darkMode, setDarkMode] = useState(() => {
@@ -41,15 +60,28 @@ export default function App() {
     }
   }, [darkMode]);
 
+  // Persist favorites to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('jhf_favorites', JSON.stringify(favorites));
+    } catch (_) {}
+  }, [favorites]);
+
+  const toggleFavorite = (songId) => {
+    setFavorites((prev) =>
+      prev.includes(songId) ? prev.filter((id) => id !== songId) : [...prev, songId]
+    );
+  };
+
   // Load compact index once on boot
   useEffect(() => {
     fetch('./data/compact_index.json')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setSongs(data || []);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Error loading songs index:", err);
         setLoading(false);
       });
@@ -73,12 +105,22 @@ export default function App() {
     setSearchQuery('');
     setAlphabet(null);
     setCategory(null);
+    const el = document.getElementById('songs-catalog');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleViewAllSongs = () => {
+    setCategory(null);
+    setAlphabet(null);
+    setSearchQuery('');
+    const el = document.getElementById('songs-catalog');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 transition-colors selection:bg-amber-500 selection:text-slate-950">
       
-      {/* Header */}
+      {/* Top Navbar */}
       <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -93,22 +135,63 @@ export default function App() {
         onOpenSongbooks={() => setIsSongbooksOpen(true)}
         quickResults={filteredSongs}
         onSelectSong={(song) => setSelectedSong(song)}
+        favoritesCount={favorites.length}
+        onOpenFavorites={() => setIsFavoritesOpen(true)}
+        onOpenAbout={() => setIsAboutOpen(true)}
       />
 
-      {/* Main Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      {/* Hero Section with Empty Tomb, Calligraphy & Central Search */}
+      <HeroSection
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        onSearchSubmit={() => {
+          const el = document.getElementById('songs-catalog');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onSelectCategoryChip={(chip) => {
+          if (chip.query === 'Christmas' || chip.query === 'Easter' || chip.query === 'Children') {
+            setCategory(chip.query === 'Children' ? 'Sunday School' : chip.query);
+          } else {
+            setSearchQuery(chip.query);
+          }
+          const el = document.getElementById('songs-catalog');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
+
+      {/* 7 Category Cards Ribbon */}
+      <CategoryHeroCards
+        activeCategory={category}
+        onSelectCategory={(catVal) => {
+          setCategory(catVal);
+          const el = document.getElementById('songs-catalog');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
+
+      {/* Popular Songs Section (4 Photo Cards) */}
+      <PopularSongs
+        songs={songs}
+        onSelectSong={(song) => setSelectedSong(song)}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
+        onViewAll={handleViewAllSongs}
+      />
+
+      {/* Main Catalog & Song Detail Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 text-slate-400">
-            <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
-              Loading 3,773 songs & chords...
+          <div className="flex flex-col items-center justify-center py-28 text-slate-400">
+            <div className="w-11 h-11 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-base font-semibold text-slate-200">
+              Loading 3,773 Christian songs & chords...
             </p>
             <p className="text-xs text-slate-400 mt-1">Initializing instant search index</p>
           </div>
         ) : (
           <div className={`grid gap-6 ${selectedSong ? 'lg:grid-cols-12' : 'grid-cols-1'}`}>
             
-            {/* Song List (full width or left column) */}
+            {/* Song List (Full Width or Left Column when Detail is Open) */}
             <div className={selectedSong ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}>
               <SongList
                 songs={filteredSongs}
@@ -123,12 +206,14 @@ export default function App() {
                 activeCategory={category}
                 onSelectCategory={setCategory}
                 allSongs={songs}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
               />
             </div>
 
-            {/* Song Detail (right column on desktop or full screen on mobile) */}
+            {/* Song Detail Overlay / Right Column */}
             {selectedSong && (
-              <div className="lg:col-span-7 xl:col-span-7 lg:sticky lg:top-36 lg:h-[calc(100vh-10rem)] fixed inset-0 lg:static z-40 bg-slate-50 dark:bg-slate-950 lg:bg-transparent lg:dark:bg-transparent p-0 lg:p-0 overflow-hidden flex flex-col">
+              <div className="lg:col-span-7 xl:col-span-7 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)] fixed inset-0 lg:static z-40 bg-slate-950 p-0 overflow-hidden flex flex-col shadow-2xl rounded-2xl border border-slate-800">
                 <SongDetail
                   songSummary={selectedSong}
                   onClose={() => setSelectedSong(null)}
@@ -143,7 +228,21 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Audio/Video Player */}
+      {/* Info Section (Recent Updates, Scripture Quote with Gold Flourish, Why This Website) */}
+      <InfoSection
+        songs={songs}
+        onSelectSong={(song) => setSelectedSong(song)}
+      />
+
+      {/* Footer */}
+      <Footer
+        onOpenAbout={() => setIsAboutOpen(true)}
+        onOpenContact={() => {
+          alert("Contact Jesus Heals Fellowship:\nPhone: +91 94930 34647\nLocation: Ambati Satram Area, Vizianagaram, AP, India");
+        }}
+      />
+
+      {/* Floating Audio/Video Player Bar */}
       <MediaPlayer
         activeMedia={activeMedia}
         onClose={() => setActiveMedia(null)}
@@ -163,10 +262,21 @@ export default function App() {
         onClose={() => setPresentationSong(null)}
       />
 
-      {/* Footer */}
-      <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500">
-        <p>సార్వత్రిక క్రైస్తవ కీర్తనలు | All Christian Songs — 3,773 Songs with Audio/Video, Chords & Lyrics</p>
-      </footer>
+      {/* About Modal */}
+      <AboutModal
+        isOpen={isAboutOpen}
+        onClose={() => setIsAboutOpen(false)}
+      />
+
+      {/* Favorites Modal */}
+      <FavoritesModal
+        isOpen={isFavoritesOpen}
+        onClose={() => setIsFavoritesOpen(false)}
+        favorites={favorites}
+        allSongs={songs}
+        onSelectSong={(song) => setSelectedSong(song)}
+        onRemoveFavorite={toggleFavorite}
+      />
 
     </div>
   );

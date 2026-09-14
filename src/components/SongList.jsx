@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles } from 'lucide-react';
+import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles, Heart } from 'lucide-react';
 import BrowseByCategory from './BrowseByCategory';
 import BrowseByLetter from './BrowseByLetter';
 
@@ -17,7 +17,9 @@ export default function SongList({
   currentLanguage = 'all',
   activeCategory,
   onSelectCategory,
-  allSongs = []
+  allSongs = [],
+  favorites = [],
+  onToggleFavorite
 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -31,18 +33,18 @@ export default function SongList({
   const currentSongs = songs.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
-    <div className="space-y-5">
+    <div id="songs-catalog" className="space-y-6 pt-4">
       
       {/* Active Songbook banner if filtered */}
       {activeSongbook && (
-        <div className="flex items-center justify-between p-3.5 bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-900 rounded-xl text-sm">
-          <div className="flex items-center gap-2 text-brand-900 dark:text-brand-200">
-            <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+        <div className="flex items-center justify-between p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-900 rounded-xl text-sm">
+          <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+            <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span>Browsing Songbook: <strong>{activeSongbook.title}</strong></span>
           </div>
           <button
             onClick={onClearSongbook}
-            className="text-xs font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-200 underline"
+            className="text-xs font-semibold text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 underline"
           >
             Show All Songs
           </button>
@@ -50,11 +52,13 @@ export default function SongList({
       )}
 
       {/* Browse by Category */}
-      <BrowseByCategory
-        songs={allSongs.length > 0 ? allSongs : songs}
-        activeCategory={activeCategory}
-        onSelectCategory={onSelectCategory}
-      />
+      <div id="categories-section">
+        <BrowseByCategory
+          songs={allSongs.length > 0 ? allSongs : songs}
+          activeCategory={activeCategory}
+          onSelectCategory={onSelectCategory}
+        />
+      </div>
 
       {/* Browse by Letter (Telugu Aksharamulu, English & Hindi) */}
       <BrowseByLetter
@@ -97,10 +101,31 @@ export default function SongList({
                 }`}
               >
                 <div>
-                  {/* Title in original script */}
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition">
-                    {song.t}
-                  </h3>
+                  <div className="flex items-start justify-between gap-2">
+                    {/* Title in original script */}
+                    <h3 className="text-base font-bold font-telugu text-slate-900 dark:text-white leading-snug group-hover:text-amber-500 dark:group-hover:text-amber-400 transition">
+                      {song.t}
+                    </h3>
+
+                    {/* Favorite Heart Toggle */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onToggleFavorite) onToggleFavorite(song.id);
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-500 rounded-md transition shrink-0"
+                      title={favorites.includes(song.id) ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Heart
+                        className={`w-3.5 h-3.5 ${
+                          favorites.includes(song.id)
+                            ? 'text-rose-500 fill-rose-500'
+                            : 'text-slate-400 hover:text-rose-400'
+                        }`}
+                      />
+                    </button>
+                  </div>
 
                   {/* Transliterated English title */}
                   {song.tr && song.tr !== song.t && (
