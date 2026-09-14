@@ -116,6 +116,7 @@ export default function App() {
                 setAlphabet={setAlphabet}
                 activeSongbook={activeSongbook}
                 onClearSongbook={() => setActiveSongbook(null)}
+                currentLanguage={language}
               />
             </div>
 

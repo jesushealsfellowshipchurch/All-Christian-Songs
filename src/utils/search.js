@@ -30,15 +30,22 @@ export function filterSongs(songs, { query = '', language = 'all', filterType = 
       if (!match) return false;
     }
 
-    // 4. Alphabetical Filter
-    if (alphabet) {
+    // 4. Alphabetical Filter (Supports both Telugu and English letters)
+    if (alphabet && alphabet !== 'ALL') {
       if (alphabet === '#') {
-        const firstChar = (song.tr || song.t || '').charAt(0).toUpperCase();
+        const firstChar = (song.tr || song.t || '').trim().replace(/^["'‘“]/, '').charAt(0).toUpperCase();
         if (/[A-Z]/.test(firstChar)) return false;
+      } else if (alphabet.charCodeAt(0) > 127) {
+        // Non-ASCII (Telugu script letter e.g. అ, ఆ, క, ప, etc.)
+        const cleanTitle = (song.t || '').trim().replace(/^["'‘“]/, '');
+        const firstChar = cleanTitle.charAt(0);
+        if (firstChar !== alphabet && song.alpha !== alphabet) {
+          return false;
+        }
       } else {
-        const firstCharEng = (song.tr || '').charAt(0).toUpperCase();
-        const firstCharOrig = (song.alpha || song.t || '').charAt(0);
-        if (firstCharEng !== alphabet && firstCharOrig !== alphabet) {
+        // English / Latin letter (e.g. A, B, C...)
+        const firstCharEng = (song.tr || song.t || '').trim().replace(/^["'‘“]/, '').charAt(0).toUpperCase();
+        if (firstCharEng !== alphabet) {
           return false;
         }
       }

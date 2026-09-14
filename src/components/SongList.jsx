@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles } from 'lucide-react';
+import BrowseByLetter from './BrowseByLetter';
 
 const PAGE_SIZE = 36;
 
@@ -11,7 +12,8 @@ export default function SongList({
   alphabet,
   setAlphabet,
   activeSongbook,
-  onClearSongbook
+  onClearSongbook,
+  currentLanguage = 'all'
 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -24,10 +26,8 @@ export default function SongList({
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const currentSongs = songs.slice(startIndex, startIndex + PAGE_SIZE);
 
-  const ALPHABETS = ['ALL', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z', '#'];
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       
       {/* Active Songbook banner if filtered */}
       {activeSongbook && (
@@ -45,25 +45,12 @@ export default function SongList({
         </div>
       )}
 
-      {/* Alphabet Index Strip */}
-      <div className="flex items-center justify-between gap-1 overflow-x-auto py-1 px-1 no-scrollbar text-xs font-medium text-slate-500">
-        {ALPHABETS.map((letter) => {
-          const isSelected = (letter === 'ALL' && !alphabet) || alphabet === letter;
-          return (
-            <button
-              key={letter}
-              onClick={() => setAlphabet(letter === 'ALL' ? null : letter)}
-              className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center transition ${
-                isSelected
-                  ? 'bg-brand-600 text-white font-bold shadow-sm'
-                  : 'hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {letter}
-            </button>
-          );
-        })}
-      </div>
+      {/* Browse by Letter (Telugu Aksharamulu & English Alphabet) */}
+      <BrowseByLetter
+        activeLetter={alphabet}
+        onSelectLetter={setAlphabet}
+        currentLanguage={currentLanguage}
+      />
 
       {/* Results Header */}
       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
