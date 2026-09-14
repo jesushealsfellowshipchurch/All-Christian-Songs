@@ -72,3 +72,63 @@ export function filterSongs(songs, { query = '', language = 'all', filterType = 
     return true;
   });
 }
+
+/**
+ * Fast, accurate suggestion generator for live autocomplete dropdowns
+ * Returns up to maxResults high-confidence matched songs
+ */
+export function getSongSuggestions(songs, query, maxResults = 8) {
+  if (!query || !query.trim() || !songs || songs.length === 0) return [];
+  const cleanQ = query.trim().toLowerCase();
+  const tokens = cleanQ.split(/\s+/).filter(Boolean);
+  const isNum = /^\d+$/.test(cleanQ);
+  const qNum = isNum ? parseInt(cleanQ, 10) : null;
+  
+  const matches = [];
+  for (let i = 0; i < songs.length; i++) {
+    const s = songs[i];
+    let score = 0;
+    
+    // Exact or prefix song index/number
+    if (isNum) {
+      if (s.id === qNum || String(s.id) === cleanQ || (s.no && String(s.no) === cleanQ)) {
+        score += 1000;
+      } else if (String(s.id).startsWith(cleanQ) || (s.no && String(s.no).startsWith(cleanQ))) {
+        score += 500;
+      }
+    }
+    
+    const titleTe = (s.t || '').toLowerCase();
+    const titleTr = (s.tr || '').toLowerCase();
+    const author = (s.auth || '').toLowerCase();
+    const searchSnippet = (s.search || '').toLowerCase();
+    
+    if (titleTe === cleanQ || titleTr === cleanQ) {
+      score += 800; // Exact title match
+    } else if (titleTe.startsWith(cleanQ) || titleTr.startsWith(cleanQ)) {
+      score += 400; // Starts with query
+    } else if (titleTe.includes(cleanQ) || titleTr.includes(cleanQ)) {
+      score += 200; // Contains query
+    } else if (author.includes(cleanQ)) {
+      score += 100; // Author match
+    } else if (searchSnippet.includes(cleanQ)) {
+      score += 50; // Lyrics match
+    }
+    
+    // Multi-token match across all fields
+    if (tokens.length > 1) {
+      const combined = `${titleTe} ${titleTr} ${author} ${searchSnippet}`;
+      if (tokens.every(t => combined.includes(t))) {
+        score += 150;
+      }
+    }
+    
+    if (score > 0) {
+      matches.push({ song: s, score });
+    }
+  }
+  
+  matches.sort((a, b) => b.score - a.score);
+  return matches.slice(0, maxResults).map(m => m.song);
+}
+

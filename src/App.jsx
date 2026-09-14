@@ -1,8 +1,8 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import CategoryHeroCards from './components/CategoryHeroCards';
-import PopularSongs from './components/PopularSongs';
+import YouTubeSection from './components/YouTubeSection';
 import SongList from './components/SongList';
 import SongDetail from './components/SongDetail';
 import InfoSection from './components/InfoSection';
@@ -99,6 +99,21 @@ export default function App() {
     });
   }, [songs, searchQuery, language, filterType, activeSongbook, alphabet, category]);
 
+  const handleOpenSong = (song) => {
+    setSelectedSong(song);
+    // Smoothly scroll and redirect user focus to the song view
+    setTimeout(() => {
+      const detailEl =
+        document.getElementById('song-detail-container') ||
+        document.getElementById('song-detail-view') ||
+        document.getElementById('songs-catalog');
+      if (detailEl) {
+        detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        detailEl.focus({ preventScroll: true });
+      }
+    }, 80);
+  };
+
   const handleSelectSongbook = (book) => {
     setActiveSongbook(book);
     setFilterType('all');
@@ -109,18 +124,10 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleViewAllSongs = () => {
-    setCategory(null);
-    setAlphabet(null);
-    setSearchQuery('');
-    const el = document.getElementById('songs-catalog');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 transition-colors selection:bg-amber-500 selection:text-slate-950">
       
-      {/* Top Navbar */}
+      {/* Top Navbar with live suggested songs search */}
       <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -133,17 +140,19 @@ export default function App() {
         totalCount={songs.length}
         filteredCount={filteredSongs.length}
         onOpenSongbooks={() => setIsSongbooksOpen(true)}
-        quickResults={filteredSongs}
-        onSelectSong={(song) => setSelectedSong(song)}
+        songs={songs}
+        onSelectSong={handleOpenSong}
         favoritesCount={favorites.length}
         onOpenFavorites={() => setIsFavoritesOpen(true)}
         onOpenAbout={() => setIsAboutOpen(true)}
       />
 
-      {/* Hero Section with Empty Tomb, Calligraphy & Central Search */}
+      {/* Hero Section with Empty Tomb, Centered Telugu Title & Calligraphy, and Central Search with suggestions */}
       <HeroSection
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        songs={songs}
+        onSelectSong={handleOpenSong}
         onSearchSubmit={() => {
           const el = document.getElementById('songs-catalog');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -169,14 +178,8 @@ export default function App() {
         }}
       />
 
-      {/* Popular Songs Section (4 Photo Cards) */}
-      <PopularSongs
-        songs={songs}
-        onSelectSong={(song) => setSelectedSong(song)}
-        favorites={favorites}
-        onToggleFavorite={toggleFavorite}
-        onViewAll={handleViewAllSongs}
-      />
+      {/* YouTube Video Section (Watch With Us) - Currently commented out, can be re-enabled anytime */}
+      {/* <YouTubeSection /> */}
 
       {/* Main Catalog & Song Detail Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -196,7 +199,7 @@ export default function App() {
               <SongList
                 songs={filteredSongs}
                 selectedSongId={selectedSong?.id}
-                onSelectSong={(song) => setSelectedSong(song)}
+                onSelectSong={handleOpenSong}
                 onQuickPlay={(song) => setActiveMedia(song)}
                 alphabet={alphabet}
                 setAlphabet={setAlphabet}
@@ -213,7 +216,11 @@ export default function App() {
 
             {/* Song Detail Overlay / Right Column */}
             {selectedSong && (
-              <div className="lg:col-span-7 xl:col-span-7 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)] fixed inset-0 lg:static z-40 bg-slate-950 p-0 overflow-hidden flex flex-col shadow-2xl rounded-2xl border border-slate-800">
+              <div
+                id="song-detail-container"
+                tabIndex={-1}
+                className="lg:col-span-7 xl:col-span-7 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)] fixed inset-0 z-[60] lg:z-30 bg-slate-950 p-0 overflow-hidden flex flex-col shadow-2xl rounded-none sm:rounded-2xl border-0 sm:border border-slate-800 outline-none"
+              >
                 <SongDetail
                   songSummary={selectedSong}
                   onClose={() => setSelectedSong(null)}
@@ -231,7 +238,7 @@ export default function App() {
       {/* Info Section (Recent Updates, Scripture Quote with Gold Flourish, Why This Website) */}
       <InfoSection
         songs={songs}
-        onSelectSong={(song) => setSelectedSong(song)}
+        onSelectSong={handleOpenSong}
       />
 
       {/* Footer */}
@@ -274,7 +281,7 @@ export default function App() {
         onClose={() => setIsFavoritesOpen(false)}
         favorites={favorites}
         allSongs={songs}
-        onSelectSong={(song) => setSelectedSong(song)}
+        onSelectSong={handleOpenSong}
         onRemoveFavorite={toggleFavorite}
       />
 

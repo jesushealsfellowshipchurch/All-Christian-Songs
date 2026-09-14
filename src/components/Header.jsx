@@ -1,5 +1,6 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe, Music } from 'lucide-react';
+import { getSongSuggestions } from '../utils/search';
 
 export default function Header({
   searchQuery,
@@ -13,7 +14,7 @@ export default function Header({
   totalCount,
   filteredCount,
   onOpenSongbooks,
-  quickResults = [],
+  songs = [],
   onSelectSong,
   favoritesCount = 0,
   onOpenFavorites,
@@ -23,7 +24,9 @@ export default function Header({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const searchInputRef = useRef(null);
+  const desktopSearchInputRef = useRef(null);
   const searchContainerRef = useRef(null);
+  const desktopSearchContainerRef = useRef(null);
 
   // Auto focus input when mobile search opens
   useEffect(() => {
@@ -35,13 +38,24 @@ export default function Header({
   // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target) &&
+        desktopSearchContainerRef.current &&
+        !desktopSearchContainerRef.current.contains(e.target)
+      ) {
         setIsDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Compute live accurate suggestions
+  const suggestions = useMemo(() => {
+    if (!searchQuery || !searchQuery.trim()) return [];
+    return getSongSuggestions(songs, searchQuery, 8);
+  }, [songs, searchQuery]);
 
   const handleOpenSearch = () => {
     setIsMobileSearchOpen(true);
@@ -70,7 +84,7 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 transition-colors shadow-lg">
+    <header className="sticky top-0 z-50 bg-slate-950/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 transition-colors shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Main Navbar Row */}
@@ -99,7 +113,7 @@ export default function Header({
                   }}
                   onFocus={() => setIsDropdownOpen(true)}
                   placeholder="Search 3,773 songs by Telugu or English..."
-                  className="w-full pl-10 pr-9 py-2.5 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-inner"
+                  className="w-full pl-10 pr-9 py-2 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-inner"
                 />
                 {searchQuery && (
                   <button
@@ -113,21 +127,24 @@ export default function Header({
                   </button>
                 )}
 
-                {/* Instant Live Search Results Dropdown */}
+                {/* Instant Live Search Results Dropdown (Mobile Full) */}
                 {isDropdownOpen && searchQuery.trim().length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-50 max-h-[75vh] overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 rounded-2xl shadow-2xl border border-amber-400/30 overflow-hidden z-50 max-h-[75vh] overflow-y-auto">
                     <div className="p-2.5 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between text-xs text-slate-300">
-                      <span>Found <strong>{filteredCount}</strong> songs</span>
-                      <span>Tap to open details</span>
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Music className="w-3.5 h-3.5 text-amber-400" />
+                        Suggested Songs ({suggestions.length})
+                      </span>
+                      <span className="text-[11px] text-amber-300/80">Tap to open lyrics</span>
                     </div>
 
-                    {quickResults.length === 0 ? (
+                    {suggestions.length === 0 ? (
                       <div className="p-6 text-center text-sm text-slate-400">
                         No matching songs for "{searchQuery}"
                       </div>
                     ) : (
                       <div className="divide-y divide-slate-800">
-                        {quickResults.slice(0, 10).map((song) => (
+                        {suggestions.map((song) => (
                           <div
                             key={song.id}
                             onClick={() => handleSelectFromSearch(song)}
@@ -143,7 +160,7 @@ export default function Header({
                                 </p>
                               )}
                               <div className="flex items-center gap-1.5 mt-1">
-                                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                                   {song.lang}
                                 </span>
                                 {song.chords && (
@@ -193,28 +210,37 @@ export default function Header({
               </div>
 
               {/* Desktop Navigation Links Pill */}
-              <nav className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 shadow-inner">
+              <nav className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 shadow-inner">
                 <button
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-slate-800 shadow-sm transition"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-slate-800 shadow-sm transition"
                 >
                   Home
                 </button>
                 <button
                   onClick={() => scrollToSection('songs-catalog')}
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   Songs
                 </button>
                 <button
                   onClick={() => scrollToSection('categories-section')}
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   Categories
                 </button>
+                {/* Videos link commented out, can be enabled anytime:
+                <button
+                  onClick={() => scrollToSection('youtube')}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
+                >
+                  <Video className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Videos</span>
+                </button>
+                */}
                 <button
                   onClick={onOpenFavorites}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
                 >
                   <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
                   <span>Favorites</span>
@@ -226,19 +252,104 @@ export default function Header({
                 </button>
                 <button
                   onClick={onOpenAbout}
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   About
                 </button>
               </nav>
 
-              {/* Right Action Icons: Search, Dark Mode, Language */}
-              <div className="flex items-center gap-2 sm:gap-2.5">
+              {/* Desktop Search Input with Suggestions Dropdown */}
+              <div ref={desktopSearchContainerRef} className="hidden md:block relative max-w-xs lg:max-w-sm flex-1 mx-2">
+                <div className="relative flex items-center">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400 pointer-events-none" />
+                  <input
+                    ref={desktopSearchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setIsDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    placeholder="Search songs or number..."
+                    className="w-full pl-9.5 pr-8 py-1.5 text-xs sm:text-sm bg-slate-900/90 border border-slate-700/80 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-inner transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        if (desktopSearchInputRef.current) desktopSearchInputRef.current.focus();
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Desktop Dropdown */}
+                {isDropdownOpen && searchQuery.trim().length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 rounded-2xl shadow-2xl border border-amber-400/30 overflow-hidden z-50 max-h-80 overflow-y-auto divide-y divide-slate-800">
+                    <div className="p-2.5 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between text-xs text-slate-300">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Music className="w-3 h-3 text-amber-400" />
+                        Suggested Songs ({suggestions.length})
+                      </span>
+                      <span className="text-[10px] text-amber-300/80">Click to open</span>
+                    </div>
+
+                    {suggestions.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400">
+                        No matching songs for "{searchQuery}"
+                      </div>
+                    ) : (
+                      suggestions.map((song) => (
+                        <div
+                          key={song.id}
+                          onClick={() => handleSelectFromSearch(song)}
+                          className="p-3 hover:bg-slate-800/80 cursor-pointer transition flex items-center justify-between gap-2 text-left group"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs sm:text-sm font-bold font-telugu text-white group-hover:text-amber-300 transition truncate">
+                              {song.t}
+                            </h4>
+                            {song.tr && song.tr !== song.t && (
+                              <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                {song.tr}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                                {song.lang}
+                              </span>
+                              {song.chords && (
+                                <span className="text-[9px] font-semibold text-amber-400 flex items-center gap-0.5">
+                                  <Guitar className="w-2.5 h-2.5" /> Chords
+                                </span>
+                              )}
+                              {song.video && (
+                                <span className="text-[9px] font-semibold text-rose-400 flex items-center gap-0.5">
+                                  <Video className="w-2.5 h-2.5" /> Media
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition shrink-0" />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Action Icons: Mobile Search Trigger, Dark Mode, Language, Mobile Hamburger */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 
-                {/* Search Trigger Button */}
+                {/* Mobile Search Trigger Button (visible only on small screens) */}
                 <button
                   onClick={handleOpenSearch}
-                  className="w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-amber-300 flex items-center justify-center transition shadow-sm"
+                  className="md:hidden w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-amber-300 flex items-center justify-center transition shadow-sm"
                   title="Search songs"
                 >
                   <Search className="w-4 h-4" />
@@ -247,7 +358,7 @@ export default function Header({
                 {/* Dark / Light Toggle */}
                 <button
                   onClick={() => setDarkMode(!darkMode)}
-                  className="w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-amber-400 hover:text-amber-300 flex items-center justify-center transition shadow-sm"
+                  className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-amber-400 hover:text-amber-300 flex items-center justify-center transition shadow-sm"
                   title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 >
                   {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -257,7 +368,7 @@ export default function Header({
                 <div className="flex items-center rounded-full bg-slate-900 border border-slate-700/80 p-0.5 shadow-sm text-xs font-semibold">
                   <button
                     onClick={() => setLanguage('all')}
-                    className={`px-2.5 py-1 rounded-full transition ${
+                    className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs transition ${
                       language === 'all'
                         ? 'bg-amber-500 text-slate-950 font-bold'
                         : 'text-slate-300 hover:text-white'
@@ -267,7 +378,7 @@ export default function Header({
                   </button>
                   <button
                     onClick={() => setLanguage('telugu')}
-                    className={`px-2 py-1 rounded-full font-telugu transition ${
+                    className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-[11px] sm:text-xs font-telugu transition ${
                       language === 'telugu'
                         ? 'bg-amber-500 text-slate-950 font-bold'
                         : 'text-slate-300 hover:text-white'
@@ -277,7 +388,7 @@ export default function Header({
                   </button>
                   <button
                     onClick={() => setLanguage('english')}
-                    className={`px-2 py-1 rounded-full transition ${
+                    className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-[11px] sm:text-xs transition ${
                       language === 'english'
                         ? 'bg-amber-500 text-slate-950 font-bold'
                         : 'text-slate-300 hover:text-white'
@@ -287,15 +398,14 @@ export default function Header({
                   </button>
                 </div>
 
-                {/* Mobile Menu Hamburger Button */}
+                {/* Mobile Menu Hamburger */}
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="md:hidden w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition"
+                  className="lg:hidden p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition"
                   title="Menu"
                 >
-                  <Menu className="w-4 h-4" />
+                  <Menu className="w-5 h-5" />
                 </button>
-
               </div>
             </>
           )}
@@ -303,52 +413,60 @@ export default function Header({
         </div>
 
         {/* Mobile Navigation Drawer */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-800 space-y-2">
+        {isMobileMenuOpen && !isMobileSearchOpen && (
+          <div className="lg:hidden py-3 border-t border-slate-800 flex flex-col gap-2">
             <button
-              onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:bg-slate-800 transition"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800"
             >
               Home
             </button>
             <button
               onClick={() => scrollToSection('songs-catalog')}
-              className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition"
+              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800"
             >
-              Songs Catalog (3,773)
+              All Songs ({totalCount})
             </button>
             <button
               onClick={() => scrollToSection('categories-section')}
-              className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition"
+              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800"
             >
-              Browse Categories
+              Categories
             </button>
+            {/* Watch YouTube Videos link commented out, can be enabled anytime:
             <button
-              onClick={() => { setIsMobileMenuOpen(false); if (onOpenSongbooks) onOpenSongbooks(); }}
-              className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2"
+              onClick={() => scrollToSection('youtube')}
+              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-rose-300 hover:bg-slate-800 flex items-center gap-2"
             >
-              <BookOpen className="w-4 h-4 text-amber-400" />
-              <span>Official Hymnal Songbooks (8)</span>
+              <Video className="w-4 h-4 text-rose-400" />
+              <span>Watch YouTube Videos</span>
             </button>
+            */}
             <button
-              onClick={() => { setIsMobileMenuOpen(false); if (onOpenFavorites) onOpenFavorites(); }}
-              className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition flex items-center justify-between"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onOpenFavorites();
+              }}
+              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800 flex items-center justify-between"
             >
               <span className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-rose-400 fill-rose-400" />
-                <span>My Favorites</span>
+                <Heart className="w-4 h-4 text-rose-400 fill-rose-400" /> Favorites
               </span>
-              {favoritesCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  {favoritesCount}
-                </span>
-              )}
+              <span className="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full">
+                {favoritesCount}
+              </span>
             </button>
             <button
-              onClick={() => { setIsMobileMenuOpen(false); if (onOpenAbout) onOpenAbout(); }}
-              className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onOpenAbout();
+              }}
+              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800"
             >
-              About Jesus Heals Fellowship
+              About & Fellowship
             </button>
           </div>
         )}

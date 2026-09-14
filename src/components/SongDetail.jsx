@@ -74,7 +74,7 @@ export default function SongDetail({
   if (!songSummary) return null;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl border-0 sm:border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-full">
+    <div id="song-detail-view" tabIndex={-1} className="bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl border-0 sm:border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-full outline-none">
       
       {/* Mobile Top Navigation Bar */}
       <div className="sm:hidden px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900 sticky top-0 z-20">
