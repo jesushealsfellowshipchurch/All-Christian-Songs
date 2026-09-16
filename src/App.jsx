@@ -54,6 +54,19 @@ export default function App() {
   });
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminPublishOpen, setIsAdminPublishOpen] = useState(false);
+
+  // Synchronize admin state across modal unlocks
+  useEffect(() => {
+    const handleAdminSync = () => {
+      setIsAdmin(sessionStorage.getItem('jhf_is_admin') === 'true');
+    };
+    window.addEventListener('jhf_admin_changed', handleAdminSync);
+    window.addEventListener('storage', handleAdminSync);
+    return () => {
+      window.removeEventListener('jhf_admin_changed', handleAdminSync);
+      window.removeEventListener('storage', handleAdminSync);
+    };
+  }, []);
   
   // Dark mode (default to true for rich stage aesthetic, can toggle)
   const [darkMode, setDarkMode] = useState(() => {
@@ -297,6 +310,7 @@ export default function App() {
                   onPlayMedia={(song) => setActiveMedia(song)}
                   activePlayingId={activeMedia?.id}
                   onOpenPresentation={(song) => setPresentationSong(song)}
+                  isAdmin={isAdmin}
                 />
               </div>
             )}

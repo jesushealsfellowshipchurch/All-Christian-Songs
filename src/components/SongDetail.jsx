@@ -3,7 +3,7 @@ import {
   X, ArrowLeft, Guitar, Video, FileText, Download, 
   Maximize2, ZoomIn, ZoomOut, RotateCcw, Share2, Copy, Check,
   BookOpen, Heart, Eye, Volume2, Sparkles, ExternalLink,
-  Loader2, Pin, PinOff
+  Loader2, Pin, PinOff, Lock, KeyRound, AlertCircle, ShieldCheck
 } from 'lucide-react';
 import { transposeChordSheet, isChordLine } from '../utils/chordTransposer';
 import generateSongPptx from '../utils/pptGenerator';
@@ -14,7 +14,8 @@ export default function SongDetail({
   onClose,
   onPlayMedia,
   activePlayingId,
-  onOpenPresentation
+  onOpenPresentation,
+  isAdmin: propIsAdmin = false
 }) {
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,9 @@ export default function SongDetail({
   const [pinnedStatus, setPinnedStatus] = useState({ isPinned: false, pinNumber: null });
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pinNumberInput, setPinNumberInput] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => propIsAdmin || sessionStorage.getItem('jhf_is_admin') === 'true');
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState('');
 
   const videoId = song?.youtube_id || songSummary?.yt;
 
@@ -80,7 +83,7 @@ export default function SongDetail({
   // Sync admin state and pin status
   useEffect(() => {
     const updatePinInfo = () => {
-      setIsAdmin(sessionStorage.getItem('jhf_is_admin') === 'true');
+      setIsAdmin(propIsAdmin || sessionStorage.getItem('jhf_is_admin') === 'true');
       const targetId = song?.id || songSummary?.id;
       const targetSlug = song?.slug || songSummary?.slug;
       setPinnedStatus(isSongPinned(targetId, targetSlug));
@@ -88,37 +91,73 @@ export default function SongDetail({
 
     updatePinInfo();
     window.addEventListener('jhf_pinned_songs_changed', updatePinInfo);
+    window.addEventListener('jhf_admin_changed', updatePinInfo);
     window.addEventListener('storage', updatePinInfo);
     return () => {
       window.removeEventListener('jhf_pinned_songs_changed', updatePinInfo);
+      window.removeEventListener('jhf_admin_changed', updatePinInfo);
       window.removeEventListener('storage', updatePinInfo);
     };
-  }, [song?.id, songSummary?.id]);
+  }, [song?.id, songSummary?.id, propIsAdmin]);
 
   const handleTogglePin = () => {
-    if (!isAdmin) {
-      alert("Admin login required to pin songs to the Landing Page. Please unlock Admin mode first.");
-      return;
-    }
-
+    setAdminPasswordInput('');
+    setAdminPasswordError('');
     if (pinnedStatus.isPinned) {
-      setShowPinPrompt(true);
       setPinNumberInput(String(pinnedStatus.pinNumber || 1));
     } else {
-      setShowPinPrompt(true);
       setPinNumberInput('');
     }
+    setShowPinPrompt(true);
   };
 
-  const handleConfirmPin = (e) => {
+  const handleConfirmPin = async (e) => {
     if (e) e.preventDefault();
-    pinSong(song || songSummary, pinNumberInput || null);
+
+    if (!isAdmin) {
+      const pass = adminPasswordInput.trim();
+      if (!pass) {
+        setAdminPasswordError('Please enter the admin password');
+        return;
+      }
+      if (pass !== 'sherwin1990') {
+        setAdminPasswordError('Incorrect admin password. Please try again.');
+        return;
+      }
+
+      // Valid password: grant admin privileges and broadcast
+      sessionStorage.setItem('jhf_is_admin', 'true');
+      setIsAdmin(true);
+      window.dispatchEvent(new CustomEvent('jhf_admin_changed', { detail: { isAdmin: true } }));
+    }
+
+    await pinSong(song || songSummary, pinNumberInput || null);
     setShowPinPrompt(false);
+    setAdminPasswordInput('');
+    setAdminPasswordError('');
   };
 
-  const handleUnpin = () => {
-    unpinSong(song?.id || songSummary?.id, song?.slug || songSummary?.slug);
+  const handleUnpin = async () => {
+    if (!isAdmin) {
+      const pass = adminPasswordInput.trim();
+      if (!pass) {
+        setAdminPasswordError('Please enter the admin password to unpin');
+        return;
+      }
+      if (pass !== 'sherwin1990') {
+        setAdminPasswordError('Incorrect admin password. Please try again.');
+        return;
+      }
+
+      sessionStorage.setItem('jhf_is_admin', 'true');
+      setIsAdmin(true);
+      window.dispatchEvent(new CustomEvent('jhf_admin_changed', { detail: { isAdmin: true } }));
+    }
+
+    await unpinSong(song?.id || songSummary?.id, song?.slug || songSummary?.slug);
     setShowPinPrompt(false);
+    setAdminPasswordInput('');
+    setAdminPasswordError('');
   };
 
   const handleCopy = () => {
@@ -652,7 +691,7 @@ export default function SongDetail({
         )}
       </div>
 
-      {/* Pin Order Prompt Modal */}
+      {/* Pin Order & Admin Unlock Prompt Modal */}
       {showPinPrompt && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
           <div
@@ -661,21 +700,53 @@ export default function SongDetail({
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
-                <Pin className="w-5 h-5 fill-slate-950" />
+                {!isAdmin ? <Lock className="w-5 h-5 text-slate-950" /> : <Pin className="w-5 h-5 fill-slate-950" />}
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">
-                  {pinnedStatus.isPinned ? "Update Pinned Song" : "Pin to Landing Page"}
+                  {!isAdmin 
+                    ? "Admin Password Required" 
+                    : (pinnedStatus.isPinned ? "Update Pinned Song" : "Pin to Landing Page")}
                 </h3>
                 <p className="text-xs text-slate-400">Featured Today's Service Song</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Pinned songs are highlighted right at the top of the church landing page with their order numbers (#1, #2, #3...).
+              {!isAdmin 
+                ? "Enter the church admin password to pin this song for Sunday worship service on the Landing Page." 
+                : "Pinned songs are highlighted right at the top of the church landing page with their order numbers (#1, #2, #3...)."}
             </p>
 
+            {adminPasswordError && (
+              <div className="mb-4 p-3 bg-red-950/60 border border-red-500/40 rounded-xl flex items-center gap-2 text-xs text-red-300">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span>{adminPasswordError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleConfirmPin} className="space-y-4">
+              {!isAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Admin Password</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={adminPasswordInput}
+                    onChange={(e) => {
+                      setAdminPasswordInput(e.target.value);
+                      if (adminPasswordError) setAdminPasswordError('');
+                    }}
+                    placeholder="Enter password..."
+                    autoFocus
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 placeholder-slate-500"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1.5">
                   Pin / Worship Order Number
@@ -686,8 +757,8 @@ export default function SongDetail({
                   value={pinNumberInput}
                   onChange={(e) => setPinNumberInput(e.target.value)}
                   placeholder="e.g. 1 (Leave empty for next available)"
-                  autoFocus
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+                  autoFocus={isAdmin}
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 placeholder-slate-500"
                 />
               </div>
 
@@ -705,7 +776,11 @@ export default function SongDetail({
 
                 <button
                   type="button"
-                  onClick={() => setShowPinPrompt(false)}
+                  onClick={() => {
+                    setShowPinPrompt(false);
+                    setAdminPasswordInput('');
+                    setAdminPasswordError('');
+                  }}
                   className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
                 >
                   Cancel
@@ -713,9 +788,15 @@ export default function SongDetail({
 
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20"
+                  className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1"
                 >
-                  {pinnedStatus.isPinned ? "Save Number" : "Pin Song 📌"}
+                  {!isAdmin ? (
+                    <>
+                      <span>Unlock & Pin 📌</span>
+                    </>
+                  ) : (
+                    pinnedStatus.isPinned ? "Save Number" : "Pin Song 📌"
+                  )}
                 </button>
               </div>
             </form>
