@@ -118,14 +118,14 @@ export default function SongList({
                 onClick={() => onSelectSong(song)}
                 className={`group relative flex flex-col justify-between p-4 rounded-xl border transition cursor-pointer text-left ${
                   isSelected
-                    ? 'bg-brand-50/70 dark:bg-brand-950/40 border-brand-500 dark:border-brand-500 shadow-sm ring-1 ring-brand-500'
-                    : 'bg-white dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800 hover:border-brand-300 dark:hover:border-brand-800 hover:shadow-md'
+                    ? 'bg-slate-800/90 dark:bg-slate-800/90 border-brand-500 dark:border-brand-500 ring-2 ring-brand-500/40 shadow-md'
+                    : 'bg-slate-900/90 dark:bg-slate-900/90 border-slate-800 dark:border-slate-800 hover:border-slate-700 dark:hover:border-slate-700 hover:bg-slate-850 hover:shadow-md'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     {/* Title in original script */}
-                    <h3 className="text-base font-bold font-telugu text-slate-900 dark:text-white leading-snug group-hover:text-amber-500 dark:group-hover:text-amber-400 transition">
+                    <h3 className="text-base font-bold font-telugu text-white dark:text-white leading-snug group-hover:text-amber-400 dark:group-hover:text-amber-400 transition">
                       {song.t}
                     </h3>
 
@@ -151,21 +151,21 @@ export default function SongList({
 
                   {/* Transliterated English title */}
                   {song.tr && song.tr !== song.t && (
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-wide">
+                    <p className="text-xs font-medium text-slate-300 dark:text-slate-400 mt-0.5 tracking-wide">
                       {song.tr}
                     </p>
                   )}
 
                   {/* Author / Composer */}
                   {song.auth && (
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-1 italic">
                       by {song.auth}
                     </p>
                   )}
                 </div>
 
                 {/* Footer Badges & Actions */}
-                <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-[11px]">
+                <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-slate-800 dark:border-slate-800 text-[11px]">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {/* Pinned Badge */}
                     {pinnedMap[song.id || song.slug] && (

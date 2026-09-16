@@ -93,8 +93,8 @@ export default function CategoryHeroCards({ activeCategory, onSelectCategory }) 
   };
 
   return (
-    <section className="relative z-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6 mb-8 sm:mb-10">
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3.5">
+    <section className="relative z-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-2 sm:mt-3 mb-4 sm:mb-6">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isActive =
@@ -105,34 +105,21 @@ export default function CategoryHeroCards({ activeCategory, onSelectCategory }) 
             <button
               key={cat.id}
               onClick={() => handleCardClick(cat)}
-              className={`group relative flex flex-col items-center justify-between text-center p-3 sm:p-3.5 min-h-[114px] sm:min-h-[126px] rounded-2xl bg-slate-900/90 dark:bg-slate-900/90 backdrop-blur-md border ${
-                isActive ? cat.activeBorder : cat.border
-              } shadow-lg transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl active:translate-y-0`}
+              className={`group relative flex items-center gap-2 px-3 sm:px-3.5 min-h-[44px] h-[44px] sm:h-[48px] rounded-xl border transition-all duration-150 transform hover:-translate-y-[1px] active:translate-y-0 text-left ${
+                isActive
+                  ? `${cat.activeBorder} text-white font-bold shadow-sm`
+                  : 'bg-slate-900/90 border-slate-800/90 hover:border-slate-700 hover:bg-slate-850 text-slate-300 hover:text-white shadow-xs'
+              }`}
             >
-              {/* Subtle background glow */}
-              <div
-                className={`absolute inset-0 rounded-2xl bg-gradient-to-b ${cat.color} opacity-60 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
-              />
+              {/* Compact subtle icon badge */}
+              <span className={`p-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center justify-center ${cat.iconColor} shrink-0`}>
+                <Icon className="w-4 h-4" />
+              </span>
 
-              {/* Icon */}
-              <div
-                className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center bg-slate-800/80 border border-slate-700/60 shadow-inner mb-1.5 ${cat.iconColor} group-hover:scale-110 transition-transform duration-200 shrink-0`}
-              >
-                <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
-              </div>
-
-              {/* Text container with dedicated height and unclipped line-height */}
-              <div className="relative z-10 flex flex-col items-center justify-center w-full min-w-0 py-0.5">
-                {/* Title */}
-                <span className="text-xs sm:text-[13px] font-bold text-white tracking-wide leading-snug truncate w-full px-1">
-                  {cat.title}
-                </span>
-
-                {/* Subtitle: generous line-height so Telugu matras and ottus are NEVER cropped */}
-                <span className="text-[11px] sm:text-xs font-telugu text-slate-400/90 group-hover:text-slate-200 leading-normal py-0.5 px-1 truncate w-full block">
-                  {cat.sub}
-                </span>
-              </div>
+              {/* Category Title */}
+              <span className="text-xs sm:text-[13px] font-semibold tracking-wide whitespace-nowrap">
+                {cat.title}
+              </span>
             </button>
           );
         })}

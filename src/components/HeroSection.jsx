@@ -77,7 +77,7 @@ export default function HeroSection({
         <img
           src="./images/hero-bg.jpg"
           alt="Empty Tomb Sunrise Calvary"
-          className="w-full h-full object-cover object-center scale-105 transform animate-pulse duration-[10000ms]"
+          className="w-full h-full object-cover object-center scale-105"
         />
         {/* Cinematic Vignette and Dark Gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/65 to-slate-950/80" />
