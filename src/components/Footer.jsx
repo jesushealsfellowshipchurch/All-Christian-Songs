@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Smartphone, Zap, Shield, Heart } from 'lucide-react';
 
-export default function Footer({ onOpenContact, onOpenAbout }) {
+export default function Footer({ onOpenContact, onOpenAbout, onOpenAdmin }) {
   return (
     <footer className="mt-auto bg-slate-950 border-t border-slate-800/80 text-slate-400">
       
@@ -42,6 +42,9 @@ export default function Footer({ onOpenContact, onOpenAbout }) {
               </button>
               <button onClick={onOpenContact} className="hover:text-amber-300 transition">
                 Contact
+              </button>
+              <button onClick={onOpenAdmin} className="hover:text-amber-400 text-slate-400 transition flex items-center gap-1">
+                Admin Portal
               </button>
               <a href="#privacy" onClick={(e) => { e.preventDefault(); alert("Privacy: All Christian Songs respects your privacy. No personal data is collected or tracked."); }} className="hover:text-amber-300 transition">
                 Privacy

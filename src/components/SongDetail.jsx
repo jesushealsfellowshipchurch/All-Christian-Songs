@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, ArrowLeft, Guitar, Video, FileText, Download, 
   Maximize2, ZoomIn, ZoomOut, RotateCcw, Share2, Copy, Check,
-  BookOpen, Heart, Eye, Volume2, Sparkles, ExternalLink
+  BookOpen, Heart, Eye, Volume2, Sparkles, ExternalLink,
+  Loader2, Pin, PinOff
 } from 'lucide-react';
 import { transposeChordSheet, isChordLine } from '../utils/chordTransposer';
+import generateSongPptx from '../utils/pptGenerator';
+import { isSongPinned, pinSong, unpinSong } from '../utils/pinManager';
 
 export default function SongDetail({
   songSummary,
@@ -22,6 +25,11 @@ export default function SongDetail({
   const [fontSize, setFontSize] = useState(16); // px
   const [copied, setCopied] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const [isGeneratingPpt, setIsGeneratingPpt] = useState(false);
+  const [pinnedStatus, setPinnedStatus] = useState({ isPinned: false, pinNumber: null });
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const [pinNumberInput, setPinNumberInput] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const videoId = song?.youtube_id || songSummary?.yt;
 
@@ -50,10 +58,68 @@ export default function SongDetail({
         setLoading(false);
       })
       .catch(err => {
+        try {
+          const cached = localStorage.getItem(`jhf_song_${target}`) || localStorage.getItem(`jhf_song_${songSummary.id}`);
+          if (cached) {
+            const data = JSON.parse(cached);
+            setSong(data);
+            if (data.chords && data.chords.length > 0 && songSummary.chords) {
+              setViewMode('chords');
+            } else {
+              setViewMode('lyrics');
+            }
+            setLoading(false);
+            return;
+          }
+        } catch (_) {}
         console.error("Error loading song:", err);
         setLoading(false);
       });
   }, [songSummary?.id]);
+
+  // Sync admin state and pin status
+  useEffect(() => {
+    const updatePinInfo = () => {
+      setIsAdmin(sessionStorage.getItem('jhf_is_admin') === 'true');
+      const targetId = song?.id || songSummary?.id;
+      const targetSlug = song?.slug || songSummary?.slug;
+      setPinnedStatus(isSongPinned(targetId, targetSlug));
+    };
+
+    updatePinInfo();
+    window.addEventListener('jhf_pinned_songs_changed', updatePinInfo);
+    window.addEventListener('storage', updatePinInfo);
+    return () => {
+      window.removeEventListener('jhf_pinned_songs_changed', updatePinInfo);
+      window.removeEventListener('storage', updatePinInfo);
+    };
+  }, [song?.id, songSummary?.id]);
+
+  const handleTogglePin = () => {
+    if (!isAdmin) {
+      alert("Admin login required to pin songs to the Landing Page. Please unlock Admin mode first.");
+      return;
+    }
+
+    if (pinnedStatus.isPinned) {
+      setShowPinPrompt(true);
+      setPinNumberInput(String(pinnedStatus.pinNumber || 1));
+    } else {
+      setShowPinPrompt(true);
+      setPinNumberInput('');
+    }
+  };
+
+  const handleConfirmPin = (e) => {
+    if (e) e.preventDefault();
+    pinSong(song || songSummary, pinNumberInput || null);
+    setShowPinPrompt(false);
+  };
+
+  const handleUnpin = () => {
+    unpinSong(song?.id || songSummary?.id, song?.slug || songSummary?.slug);
+    setShowPinPrompt(false);
+  };
 
   const handleCopy = () => {
     if (!song) return;
@@ -69,6 +135,42 @@ export default function SongDetail({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handlePptDownload = async (e) => {
+    if (e) e.preventDefault();
+
+    // If song has a pre-existing cloud PPT URL, open it directly
+    if (song?.ppt_url) {
+      window.open(song.ppt_url, '_blank');
+      return;
+    }
+
+    try {
+      setIsGeneratingPpt(true);
+      let songData = song;
+      if (!songData || !songData.lyrics_original) {
+        const target = songSummary?.slug || songSummary?.id;
+        if (target) {
+          const res = await fetch(`./data/songs/${target}.json`);
+          if (res.ok) {
+            songData = await res.json();
+          } else {
+            const cached = localStorage.getItem(`jhf_song_${target}`) || localStorage.getItem(`jhf_song_${songSummary?.id}`);
+            if (cached) songData = JSON.parse(cached);
+          }
+        }
+      }
+      if (!songData) {
+        throw new Error("Song details could not be loaded.");
+      }
+      await generateSongPptx(songData);
+    } catch (err) {
+      console.error('Failed to generate PowerPoint:', err);
+      alert('Unable to generate PowerPoint slides. Please try again.');
+    } finally {
+      setIsGeneratingPpt(false);
+    }
   };
 
   if (!songSummary) return null;
@@ -87,6 +189,20 @@ export default function SongDetail({
         </button>
 
         <div className="flex items-center gap-1">
+          {/* Pin Song (Mobile) */}
+          <button
+            onClick={handleTogglePin}
+            className={`p-2 rounded-xl transition flex items-center gap-1 ${
+              pinnedStatus.isPinned
+                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 font-bold'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title={pinnedStatus.isPinned ? `Pinned #${pinnedStatus.pinNumber}` : "Pin for Today's Service"}
+          >
+            <Pin className={`w-4 h-4 ${pinnedStatus.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
+            {pinnedStatus.isPinned && <span className="text-[11px] font-black">#{pinnedStatus.pinNumber}</span>}
+          </button>
+
           {/* Presentation Mode */}
           <button
             onClick={() => onOpenPresentation(song)}
@@ -122,14 +238,26 @@ export default function SongDetail({
             <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300">
               {song?.language || songSummary.lang}
             </span>
+
+            {/* Pinned Badge */}
+            {pinnedStatus.isPinned && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-xs animate-fadeIn">
+                <Pin className="w-3 h-3 fill-amber-500 text-amber-500" />
+                <span>Today's Worship Service #{pinnedStatus.pinNumber || 1}</span>
+              </span>
+            )}
+
+            {/* Songbook & Hymn Number */}
             {(() => {
               if (!song?.songbooks || song.songbooks.length === 0) return null;
               const b = song.songbooks[0];
               const name = typeof b === 'string' ? b : (b.book || b.title || b.name || '');
               if (!name) return null;
+              const num = typeof b === 'object' ? b.number : null;
               return (
-                <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900">
-                  {name.replace(/-/g, ' ')}
+                <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900 flex items-center gap-1">
+                  <span>{name.replace(/-/g, ' ')}</span>
+                  {num && <strong className="text-amber-600 dark:text-amber-400 font-bold">• Hymn #{num}</strong>}
                 </span>
               );
             })()}
@@ -151,51 +279,78 @@ export default function SongDetail({
             </p>
           )}
 
-          {/* Mobile Media Controls Bar */}
-          {videoId && (
-            <div className="sm:hidden flex items-center gap-2 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800">
-              <button
-                onClick={() => {
-                  setShowVideo(prev => !prev);
-                  if (onPlayMedia) onPlayMedia(song || songSummary);
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition ${
-                  showVideo || activePlayingId === song?.id || activePlayingId === songSummary?.id
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20'
-                    : 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/40'
-                }`}
-              >
-                <Video className="w-4 h-4" />
-                <span>{showVideo ? 'Hide Video Player' : 'Play YouTube Audio / Video'}</span>
-              </button>
+          {/* Mobile Media Controls & PPT Bar */}
+          <div className="sm:hidden flex items-center gap-2 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800">
+            {videoId && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowVideo(prev => !prev);
+                    if (onPlayMedia) onPlayMedia(song || songSummary);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl transition ${
+                    showVideo || activePlayingId === song?.id || activePlayingId === songSummary?.id
+                      ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20'
+                      : 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/40'
+                  }`}
+                >
+                  <Video className="w-4 h-4" />
+                  <span>{showVideo ? 'Hide Video' : 'Audio / Video'}</span>
+                </button>
 
-              <a
-                href={`https://www.youtube.com/watch?v=${videoId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-xl text-rose-500 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/40 transition shrink-0"
-                title="Watch directly on YouTube"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-
-              {song?.ppt_url && (
                 <a
-                  href={song.ppt_url}
+                  href={`https://www.youtube.com/watch?v=${videoId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/40 transition shrink-0"
-                  title="Download PowerPoint (PPT)"
+                  className="p-2 rounded-xl text-rose-500 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/40 transition shrink-0"
+                  title="Watch directly on YouTube"
                 >
-                  <Download className="w-4 h-4" />
+                  <ExternalLink className="w-4 h-4" />
                 </a>
+              </>
+            )}
+
+            {/* PPT Download (Auto-generated or Cloud Link) */}
+            <button
+              onClick={handlePptDownload}
+              disabled={isGeneratingPpt}
+              className={`p-2 rounded-xl text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/40 transition shrink-0 flex items-center justify-center ${!videoId ? 'w-full py-2.5 gap-2 font-bold text-xs' : ''}`}
+              title={song?.ppt_url ? "Download PowerPoint Presentation (Hosted)" : "Auto-Generate & Download PowerPoint (16:9 PPTX)"}
+            >
+              {isGeneratingPpt ? (
+                <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+              ) : (
+                <Download className="w-4 h-4" />
               )}
-            </div>
-          )}
+              {!videoId && <span>{isGeneratingPpt ? 'Generating PowerPoint...' : 'Download PowerPoint (PPT)'}</span>}
+            </button>
+          </div>
         </div>
 
         {/* Desktop Action icons */}
         <div className="hidden sm:flex items-center gap-2 shrink-0">
+          {/* Pin Song (Desktop) */}
+          <button
+            onClick={handleTogglePin}
+            className={`p-2 rounded-xl transition flex items-center gap-1.5 ${
+              pinnedStatus.isPinned
+                ? 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/40 font-bold shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title={
+              pinnedStatus.isPinned
+                ? `Pinned #${pinnedStatus.pinNumber} on Landing Page (Click to edit or unpin)`
+                : (isAdmin ? "Pin song to Landing Page for Today's Service" : "Pinned Song Status")
+            }
+          >
+            <Pin className={`w-4 h-4 ${pinnedStatus.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
+            {pinnedStatus.isPinned ? (
+              <span className="text-xs font-bold">#{pinnedStatus.pinNumber} Pinned</span>
+            ) : (
+              isAdmin && <span className="text-xs font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">Pin</span>
+            )}
+          </button>
+
           {/* Audio / Video Play Button */}
           {videoId && (
             <div className="flex items-center gap-1">
@@ -236,17 +391,18 @@ export default function SongDetail({
           </button>
 
           {/* PPT Download */}
-          {song?.ppt_url && (
-            <a
-              href={song.ppt_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-              title="Download PowerPoint (PPT)"
-            >
+          <button
+            onClick={handlePptDownload}
+            disabled={isGeneratingPpt}
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title={song?.ppt_url ? "Download PowerPoint (PPT)" : "Auto-Generate & Download PowerPoint (16:9 PPTX)"}
+          >
+            {isGeneratingPpt ? (
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+            ) : (
               <Download className="w-4 h-4" />
-            </a>
-          )}
+            )}
+          </button>
 
           {/* Copy Lyrics */}
           <button
@@ -495,6 +651,77 @@ export default function SongDetail({
           </div>
         )}
       </div>
+
+      {/* Pin Order Prompt Modal */}
+      {showPinPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
+          <div
+            className="w-full max-w-sm bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl text-slate-100 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                <Pin className="w-5 h-5 fill-slate-950" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  {pinnedStatus.isPinned ? "Update Pinned Song" : "Pin to Landing Page"}
+                </h3>
+                <p className="text-xs text-slate-400">Featured Today's Service Song</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+              Pinned songs are highlighted right at the top of the church landing page with their order numbers (#1, #2, #3...).
+            </p>
+
+            <form onSubmit={handleConfirmPin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1.5">
+                  Pin / Worship Order Number
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={pinNumberInput}
+                  onChange={(e) => setPinNumberInput(e.target.value)}
+                  placeholder="e.g. 1 (Leave empty for next available)"
+                  autoFocus
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                {pinnedStatus.isPinned && (
+                  <button
+                    type="button"
+                    onClick={handleUnpin}
+                    className="py-2.5 px-3 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <PinOff className="w-3.5 h-3.5" />
+                    <span>Unpin</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowPinPrompt(false)}
+                  className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20"
+                >
+                  {pinnedStatus.isPinned ? "Save Number" : "Pin Song 📌"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

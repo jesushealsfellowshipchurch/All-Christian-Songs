@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles, Heart } from 'lucide-react';
+import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles, Heart, Pin } from 'lucide-react';
 import BrowseByCategory from './BrowseByCategory';
 import BrowseByLetter from './BrowseByLetter';
+import { getPinnedSongs } from '../utils/pinManager';
 
 const PAGE_SIZE = 36;
 
@@ -22,6 +23,27 @@ export default function SongList({
   onToggleFavorite
 }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [pinnedMap, setPinnedMap] = useState({});
+
+  useEffect(() => {
+    const updateMap = () => {
+      const list = getPinnedSongs();
+      const map = {};
+      list.forEach(item => {
+        if (item.id) map[item.id] = item.pinNumber || 1;
+        if (item.slug) map[item.slug] = item.pinNumber || 1;
+      });
+      setPinnedMap(map);
+    };
+
+    updateMap();
+    window.addEventListener('jhf_pinned_songs_changed', updateMap);
+    window.addEventListener('storage', updateMap);
+    return () => {
+      window.removeEventListener('jhf_pinned_songs_changed', updateMap);
+      window.removeEventListener('storage', updateMap);
+    };
+  }, []);
 
   // Reset to page 1 when songs array changes
   useEffect(() => {
@@ -145,6 +167,21 @@ export default function SongList({
                 {/* Footer Badges & Actions */}
                 <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-[11px]">
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Pinned Badge */}
+                    {pinnedMap[song.id || song.slug] && (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded font-black text-[10px] bg-amber-500 text-slate-950 shadow-xs">
+                        <Pin className="w-2.5 h-2.5 fill-slate-950" />
+                        <span>#{pinnedMap[song.id || song.slug]}</span>
+                      </span>
+                    )}
+
+                    {/* Hymnal / Songbook Number */}
+                    {song.books && song.books.length > 0 && song.books[0].number && (
+                      <span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900">
+                        #{song.books[0].number}
+                      </span>
+                    )}
+
                     {/* Language Badge */}
                     <span className="px-1.5 py-0.5 rounded font-medium uppercase tracking-wider text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                       {song.lang}

@@ -12,7 +12,11 @@ import SongbooksModal from './components/SongbooksModal';
 import PresentationModal from './components/PresentationModal';
 import AboutModal from './components/AboutModal';
 import FavoritesModal from './components/FavoritesModal';
+import AdminLoginModal from './components/AdminLoginModal';
+import AdminPublishModal from './components/AdminPublishModal';
+import PinnedSongsSection from './components/PinnedSongsSection';
 import { filterSongs } from './utils/search';
+import { fetchPinnedSongs } from './utils/pinManager';
 
 export default function App() {
   const [songs, setSongs] = useState([]);
@@ -44,6 +48,13 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   
+  // Admin authentication and publishing
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return sessionStorage.getItem('jhf_is_admin') === 'true';
+  });
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [isAdminPublishOpen, setIsAdminPublishOpen] = useState(false);
+  
   // Dark mode (default to true for rich stage aesthetic, can toggle)
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('theme') !== 'light';
@@ -73,12 +84,23 @@ export default function App() {
     );
   };
 
-  // Load compact index once on boot
+  // Load compact index and pinned songs once on boot
   useEffect(() => {
+    fetchPinnedSongs();
     fetch('./data/compact_index.json')
       .then((res) => res.json())
       .then((data) => {
-        const loaded = data || [];
+        let loaded = data || [];
+        // Merge locally published songs if any
+        try {
+          const localCustom = JSON.parse(localStorage.getItem('jhf_published_songs') || '[]');
+          if (localCustom.length > 0) {
+            const existingIds = new Set(loaded.map(s => s.id || s.slug));
+            const fresh = localCustom.filter(s => !existingIds.has(s.id) && !existingIds.has(s.slug));
+            loaded = [...fresh, ...loaded];
+          }
+        } catch (_) {}
+
         // By default display Telugu songs starting
         const sorted = [...loaded].sort((a, b) => {
           const aTe = a.lang === 'telugu' ? 1 : 0;
@@ -131,6 +153,37 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleOpenAdmin = () => {
+    if (isAdmin) {
+      setIsAdminPublishOpen(true);
+    } else {
+      setIsAdminLoginOpen(true);
+    }
+  };
+
+  const handleAdminLoginSuccess = () => {
+    setIsAdmin(true);
+    setIsAdminLoginOpen(false);
+    setIsAdminPublishOpen(true);
+  };
+
+  const handleSongPublished = (newSong, indexEntry) => {
+    // Immediately prepend to state
+    setSongs((prev) => [indexEntry, ...prev.filter(s => s.id !== indexEntry.id && s.slug !== indexEntry.slug)]);
+    // Select the song to open in SongDetail view
+    setSelectedSong(indexEntry);
+    setTimeout(() => {
+      const detailEl =
+        document.getElementById('song-detail-container') ||
+        document.getElementById('song-detail-view') ||
+        document.getElementById('songs-catalog');
+      if (detailEl) {
+        detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        detailEl.focus({ preventScroll: true });
+      }
+    }, 120);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 transition-colors selection:bg-amber-500 selection:text-slate-950">
       
@@ -152,6 +205,8 @@ export default function App() {
         favoritesCount={favorites.length}
         onOpenFavorites={() => setIsFavoritesOpen(true)}
         onOpenAbout={() => setIsAboutOpen(true)}
+        isAdmin={isAdmin}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* Hero Section with Empty Tomb, Centered Telugu Title & Calligraphy, and Central Search with suggestions */}
@@ -183,6 +238,14 @@ export default function App() {
           const el = document.getElementById('songs-catalog');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
+      />
+
+      {/* Pinned / Featured Songs for Today's Service */}
+      <PinnedSongsSection
+        onSelectSong={handleOpenSong}
+        onQuickPlay={(song) => setActiveMedia(song)}
+        isAdmin={isAdmin}
+        allSongs={songs}
       />
 
       {/* YouTube Video Section (Watch With Us) - Currently commented out, can be re-enabled anytime */}
@@ -254,6 +317,7 @@ export default function App() {
         onOpenContact={() => {
           alert("Contact Jesus Heals Fellowship:\nPhone: +91 94930 34647\nLocation: Ambati Satram Area, Vizianagaram, AP, India");
         }}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* Floating Audio/Video Player Bar */}
@@ -290,6 +354,20 @@ export default function App() {
         allSongs={songs}
         onSelectSong={handleOpenSong}
         onRemoveFavorite={toggleFavorite}
+      />
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={isAdminLoginOpen}
+        onClose={() => setIsAdminLoginOpen(false)}
+        onLoginSuccess={handleAdminLoginSuccess}
+      />
+
+      {/* Admin Publish Modal */}
+      <AdminPublishModal
+        isOpen={isAdminPublishOpen}
+        onClose={() => setIsAdminPublishOpen(false)}
+        onSongPublished={handleSongPublished}
       />
 
     </div>

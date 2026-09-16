@@ -161,7 +161,7 @@ export default function HeroSection({
                 setIsDropdownOpen(true);
               }}
               onFocus={() => setIsDropdownOpen(true)}
-              placeholder="Search 3,773 songs by number, Telugu or English..."
+              placeholder={`Search ${songs?.length ? songs.length.toLocaleString() : '3,773'} songs by number, Telugu or English...`}
               className="w-full py-3.5 sm:py-4 pl-3 pr-24 text-sm sm:text-base text-white placeholder-slate-400/80 bg-transparent focus:outline-none"
             />
 

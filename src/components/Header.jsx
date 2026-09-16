@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe, Music } from 'lucide-react';
+import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe, Music, Lock, Plus, ShieldCheck } from 'lucide-react';
 import { getSongSuggestions } from '../utils/search';
 
 export default function Header({
@@ -18,7 +18,9 @@ export default function Header({
   onSelectSong,
   favoritesCount = 0,
   onOpenFavorites,
-  onOpenAbout
+  onOpenAbout,
+  isAdmin = false,
+  onOpenAdmin
 }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -112,7 +114,7 @@ export default function Header({
                     setIsDropdownOpen(true);
                   }}
                   onFocus={() => setIsDropdownOpen(true)}
-                  placeholder="Search 3,773 songs by Telugu or English..."
+                  placeholder={`Search ${totalCount ? totalCount.toLocaleString() : '3,773'} songs by Telugu or English...`}
                   className="w-full pl-10 pr-9 py-2 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-inner"
                 />
                 {searchQuery && (
@@ -255,6 +257,27 @@ export default function Header({
                   className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   About
+                </button>
+                <button
+                  onClick={onOpenAdmin}
+                  className={`px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
+                    isAdmin 
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                  title={isAdmin ? "Publish New Song" : "Admin Login"}
+                >
+                  {isAdmin ? (
+                    <>
+                      <Plus className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Add Song</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Admin</span>
+                    </>
+                  )}
                 </button>
               </nav>
 
@@ -467,6 +490,23 @@ export default function Header({
               className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800"
             >
               About & Fellowship
+            </button>
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onOpenAdmin();
+              }}
+              className={`px-3 py-2 rounded-lg text-sm text-left font-medium flex items-center justify-between transition ${
+                isAdmin ? 'text-amber-300 bg-amber-500/15' : 'text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                {isAdmin ? <Plus className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
+                <span>{isAdmin ? 'Publish New Song' : 'Admin Portal'}</span>
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                {isAdmin ? 'Active' : 'Login'}
+              </span>
             </button>
           </div>
         )}
