@@ -553,7 +553,8 @@ export default function AdminSongbookManager({ songId, songTitle, onClose, onSav
                 </div>
               </div>
             );
-          })}
+          })
+          )}
         </div>
       </div>
 

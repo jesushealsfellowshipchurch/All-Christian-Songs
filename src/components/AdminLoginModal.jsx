@@ -10,11 +10,12 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  UserCheck
+  UserCheck,
+  LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function AdminLoginModal({ isOpen, onClose }) {
+export default function AdminLoginModal({ isOpen, onClose, onOpenPortal }) {
   const { user, profile, loading: authLoading, signIn, signOut, error: globalAuthError, clearError } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -168,34 +169,48 @@ export default function AdminLoginModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-              Authentication foundation is active. Admin CRUD, song publishing, and song pinning workflows will be enabled in Phase 9 with PostgreSQL RLS authorization.
+            <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+              Your administrator session is active. Open the Admin Portal to manage the hymnal catalog, create songs, and organize songbooks.
             </p>
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSignOut}
-                disabled={submitting}
-                className="flex-1 py-2.5 px-4 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-medium rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={submitting}
-                className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition-colors"
-              >
-                Close
-              </button>
+            <div className="flex flex-col gap-3">
+              {/* Primary CTA: Open Admin Portal */}
+              {onOpenPortal && (
+                <button
+                  type="button"
+                  onClick={onOpenPortal}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-md hover:shadow-amber-500/25 flex items-center justify-center gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Open Admin Portal</span>
+                </button>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={submitting}
+                  className="flex-1 py-2.5 px-4 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-medium rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={submitting}
+                  className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         ) : (

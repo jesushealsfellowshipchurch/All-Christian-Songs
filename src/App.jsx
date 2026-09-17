@@ -13,7 +13,7 @@ import PresentationModal from './components/PresentationModal';
 import AboutModal from './components/AboutModal';
 import FavoritesModal from './components/FavoritesModal';
 import AdminLoginModal from './components/AdminLoginModal';
-import AdminPublishModal from './components/AdminPublishModal';
+import AdminPortalModal from './components/admin/AdminPortalModal';
 import PinnedSongsSection from './components/PinnedSongsSection';
 import { filterSongs } from './utils/search';
 import { fetchPinnedSongs } from './utils/pinManager';
@@ -54,7 +54,7 @@ export default function App() {
   const { user, profile } = useAuth();
   const isAdmin = Boolean(user && profile?.role === 'admin');
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
-  const [isAdminPublishOpen, setIsAdminPublishOpen] = useState(false);
+  const [isAdminPortalOpen, setIsAdminPortalOpen] = useState(false);
   
   // Dark mode (default to true for rich stage aesthetic, can toggle)
   const [darkMode, setDarkMode] = useState(() => {
@@ -169,7 +169,11 @@ export default function App() {
   };
 
   const handleOpenAdmin = () => {
-    setIsAdminLoginOpen(true);
+    if (isAdmin) {
+      setIsAdminPortalOpen(true);
+    } else {
+      setIsAdminLoginOpen(true);
+    }
   };
 
   const handleSongPublished = (newSong, indexEntry) => {
@@ -366,13 +370,16 @@ export default function App() {
       <AdminLoginModal
         isOpen={isAdminLoginOpen}
         onClose={() => setIsAdminLoginOpen(false)}
+        onOpenPortal={() => {
+          setIsAdminLoginOpen(false);
+          setIsAdminPortalOpen(true);
+        }}
       />
 
-      {/* Admin Publish Modal */}
-      <AdminPublishModal
-        isOpen={isAdminPublishOpen}
-        onClose={() => setIsAdminPublishOpen(false)}
-        onSongPublished={handleSongPublished}
+      {/* Admin Portal (Full-screen) */}
+      <AdminPortalModal
+        isOpen={isAdminPortalOpen}
+        onClose={() => setIsAdminPortalOpen(false)}
       />
 
     </div>
