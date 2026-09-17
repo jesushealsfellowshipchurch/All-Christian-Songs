@@ -17,7 +17,8 @@ import {
   Eye,
   EyeOff,
   Globe,
-  Tag
+  Tag,
+  Languages
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -29,6 +30,7 @@ import {
   fetchAvailableCategories,
   formatAdminError
 } from '../../services/adminSongService';
+import TransliteratorService from '../../utils/transliterator';
 
 function extractYoutubeId(input) {
   if (!input) return '';
@@ -506,13 +508,31 @@ export default function AdminCreateSong({ onBackToList, onSuccess }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs sm:text-sm">
             {/* Song Title */}
             <div className="space-y-1.5 sm:col-span-2">
-              <label className="block font-medium text-slate-300">
-                Song Title (Primary Script) <span className="text-amber-400">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block font-medium text-slate-300">
+                  Song Title (Primary Script) <span className="text-amber-400">*</span>
+                </label>
+                {title.trim() && !TransliteratorService.isTelugu(title) && language === 'telugu' && (
+                  <button
+                    type="button"
+                    onClick={() => setTitle(TransliteratorService.toTelugu(title.trim()))}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/25 transition-colors"
+                    title="Convert phonetic English text to Telugu script"
+                  >
+                    <Languages className="w-3 h-3" />
+                    <span>To Telugu Script</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => {
+                  if (title.trim() && !titleTransliterated.trim() && TransliteratorService.isTelugu(title)) {
+                    setTitleTransliterated(TransliteratorService.transliterate(title.trim(), 'telugu'));
+                  }
+                }}
                 placeholder="e.g. లేచినాడురా సమాధి గెలిచినాడురా or Amazing Grace"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/50 text-slate-100 placeholder:text-slate-500 outline-none"
@@ -521,9 +541,22 @@ export default function AdminCreateSong({ onBackToList, onSuccess }) {
 
             {/* Transliterated Title */}
             <div className="space-y-1.5">
-              <label className="block font-medium text-slate-300">
-                Transliterated Title (English Script)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block font-medium text-slate-300">
+                  Transliterated Title (English Script)
+                </label>
+                {title.trim() && TransliteratorService.isTelugu(title) && (
+                  <button
+                    type="button"
+                    onClick={() => setTitleTransliterated(TransliteratorService.transliterate(title.trim(), 'telugu'))}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                    title="Auto-transliterate Telugu title to English script"
+                  >
+                    <Languages className="w-3 h-3" />
+                    <span>Transliterate</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={titleTransliterated}
@@ -664,13 +697,26 @@ export default function AdminCreateSong({ onBackToList, onSuccess }) {
 
             {/* Transliterated Lyrics */}
             <div className="space-y-1.5 pt-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <label className="block font-medium text-slate-300">
                   Transliterated Lyrics (Roman Script, Optional)
                 </label>
-                <span className="text-[11px] text-slate-400">
-                  Separate stanzas with an empty line
-                </span>
+                <div className="flex items-center gap-2">
+                  {lyricsOriginalText.trim() && TransliteratorService.isTelugu(lyricsOriginalText) && (
+                    <button
+                      type="button"
+                      onClick={() => setLyricsTransliteratedText(TransliteratorService.transliterate(lyricsOriginalText.trim(), 'telugu'))}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                      title="Auto-transliterate Telugu lyrics to English script"
+                    >
+                      <Languages className="w-3 h-3" />
+                      <span>Transliterate</span>
+                    </button>
+                  )}
+                  <span className="text-[11px] text-slate-400">
+                    Separate stanzas with an empty line
+                  </span>
+                </div>
               </div>
               <textarea
                 rows={8}
@@ -692,22 +738,53 @@ export default function AdminCreateSong({ onBackToList, onSuccess }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs sm:text-sm">
             <div className="space-y-1.5">
-              <label className="block font-medium text-slate-300">
-                Author (Telugu Script)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block font-medium text-slate-300">
+                  Author (Telugu Script)
+                </label>
+                {authorEnglish.trim() && !authorTelugu.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setAuthorTelugu(TransliteratorService.toTelugu(authorEnglish.trim()))}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/25 transition-colors"
+                    title="Convert English author name to Telugu script"
+                  >
+                    <Languages className="w-3 h-3" />
+                    <span>To Telugu</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={authorTelugu}
                 onChange={(e) => setAuthorTelugu(e.target.value)}
+                onBlur={() => {
+                  if (authorTelugu.trim() && !authorEnglish.trim() && TransliteratorService.isTelugu(authorTelugu)) {
+                    setAuthorEnglish(TransliteratorService.transliterate(authorTelugu.trim(), 'telugu'));
+                  }
+                }}
                 placeholder="e.g. పాస్టర్ పి.ఆర్. జాన్"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-amber-500/60 text-slate-100 placeholder:text-slate-500 outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block font-medium text-slate-300">
-                Author (English Script)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block font-medium text-slate-300">
+                  Author (English Script)
+                </label>
+                {authorTelugu.trim() && TransliteratorService.isTelugu(authorTelugu) && (
+                  <button
+                    type="button"
+                    onClick={() => setAuthorEnglish(TransliteratorService.transliterate(authorTelugu.trim(), 'telugu'))}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                    title="Auto-transliterate Telugu author to English script"
+                  >
+                    <Languages className="w-3 h-3" />
+                    <span>Transliterate</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={authorEnglish}
