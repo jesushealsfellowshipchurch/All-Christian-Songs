@@ -18,3 +18,13 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Migration backup (do not commit)
+backup/
+
+# Scratch files
+scratch/
+
+# Supabase CLI temporary files
+supabase/.temp/
+

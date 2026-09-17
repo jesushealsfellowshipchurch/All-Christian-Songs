@@ -1,8 +1,7 @@
 /**
  * pinManager.js - Church Pinned / Featured Songs Manager
- * Allows church admins to pin featured worship songs (e.g. for today's Sunday service)
- * with order numbers (#1, #2, #3...), syncing in real-time across the landing page and song details.
- * Supports Supabase Realtime cloud synchronization so all church members see updates instantly.
+ * Fetches and synchronizes pinned worship songs from Supabase with static JSON fallback.
+ * Write operations strictly require an authenticated Supabase admin session.
  */
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
@@ -40,8 +39,7 @@ export function isSongPinned(songId, songSlug) {
 }
 
 /**
- * Fetch latest pinned songs from cloud (Supabase or Vercel serverless / static JSON)
- * Syncs with all church members' devices.
+ * Fetch latest pinned songs from cloud (Supabase or static JSON fallback)
  */
 export async function fetchPinnedSongs() {
   // 1. Try Supabase if configured
@@ -77,20 +75,7 @@ export async function fetchPinnedSongs() {
     }
   }
 
-  // 2. Try Vercel Serverless Function /api/pinned-songs
-  try {
-    const res = await fetch('/api/pinned-songs');
-    if (res.ok) {
-      const result = await res.json();
-      if (result.success && Array.isArray(result.songs) && result.songs.length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(result.songs));
-        window.dispatchEvent(new CustomEvent('jhf_pinned_songs_changed', { detail: result.songs }));
-        return result.songs;
-      }
-    }
-  } catch (_) {}
-
-  // 3. Fallback to public/data/pinned_songs.json
+  // 2. Fallback to public/data/pinned_songs.json
   try {
     const res = await fetch('./data/pinned_songs.json');
     if (res.ok) {
@@ -108,7 +93,7 @@ export async function fetchPinnedSongs() {
 
 /**
  * Initializes Supabase real-time listener so church members' browsers
- * update automatically when an admin pins/unpins a song during service!
+ * update automatically when an admin pins/unpins a song during service.
  */
 export function initRealtimeSubscription() {
   if (realtimeSubscribed || !isSupabaseConfigured || !supabase) return;
@@ -121,7 +106,6 @@ export function initRealtimeSubscription() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pinned_songs' },
         () => {
-          // Re-fetch when admin updates anything
           fetchPinnedSongs();
         }
       )
@@ -133,12 +117,18 @@ export function initRealtimeSubscription() {
 
 /**
  * Pin a song with an order number (e.g. #1, #2...)
+ * Requires active Supabase admin authentication.
+ * Fails closed if database write fails; does not mask failures with localStorage.
  */
 export async function pinSong(song, requestedNumber = null) {
-  if (!song) return [];
+  if (!song) return { success: false, error: 'No song provided' };
+
+  if (!isSupabaseConfigured || !supabase) {
+    return { success: false, error: 'Database is not configured' };
+  }
+
   const list = getPinnedSongs();
   const targetId = song.id || song.slug;
-
   const remaining = list.filter(s => s.id !== targetId && s.slug !== song.slug);
 
   let pinNum = requestedNumber ? parseInt(requestedNumber, 10) : null;
@@ -157,84 +147,92 @@ export async function pinSong(song, requestedNumber = null) {
     youtube_id: song.youtube_id || song.yt || '',
     ppt_url: song.ppt_url || '',
     chords: !!(song.chords && song.chords.length > 0) || !!song.chords,
-    pinNumber: pinNum,
-    pinnedAt: new Date().toISOString()
+    pin_number: pinNum,
+    pinned_at: new Date().toISOString()
   };
 
-  const updated = [...remaining, pinnedEntry].sort((a, b) => a.pinNumber - b.pinNumber);
+  // Execute database write first
+  const { data, error } = await supabase
+    .from('pinned_songs')
+    .upsert(pinnedEntry)
+    .select();
+
+  if (error || !data || data.length === 0) {
+    const errMsg = error?.message || 'Database write rejected by security policy (Admin authentication required)';
+    console.warn('pinSong failed:', errMsg);
+    return { success: false, error: errMsg };
+  }
+
+  // Update local cache only upon confirmed database success
+  const formattedEntry = {
+    ...pinnedEntry,
+    pinNumber: pinnedEntry.pin_number,
+    pinnedAt: pinnedEntry.pinned_at
+  };
+  const updated = [...remaining, formattedEntry].sort((a, b) => a.pinNumber - b.pinNumber);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('jhf_pinned_songs_changed', { detail: updated }));
 
-  // Cloud Sync to Supabase
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase.from('pinned_songs').upsert({
-        id: pinnedEntry.id,
-        slug: pinnedEntry.slug,
-        title: pinnedEntry.title,
-        title_transliterated: pinnedEntry.title_transliterated,
-        author: pinnedEntry.author,
-        language: pinnedEntry.language,
-        youtube_id: pinnedEntry.youtube_id,
-        ppt_url: pinnedEntry.ppt_url,
-        chords: pinnedEntry.chords,
-        pin_number: pinnedEntry.pinNumber,
-        pinned_at: pinnedEntry.pinnedAt
-      });
-    } catch (err) {
-      console.warn('Failed to save pinned song to Supabase:', err);
-    }
-  }
-
-  // Also sync to Vercel Serverless if running
-  syncToVercelApi(updated);
-
-  return updated;
+  return { success: true, songs: updated };
 }
 
 /**
  * Unpin a song
+ * Requires active Supabase admin authentication.
+ * Fails closed if database delete fails.
  */
 export async function unpinSong(songId, songSlug) {
-  const list = getPinnedSongs();
-  const targetId = songId || songSlug;
-  const updated = list.filter(s => {
-    if (songId && s.id === songId) return false;
-    if (songSlug && s.slug === songSlug) return false;
-    return true;
-  });
+  if (!isSupabaseConfigured || !supabase) {
+    return { success: false, error: 'Database is not configured' };
+  }
 
+  const targetId = songId || songSlug;
+  const { data, error } = await supabase
+    .from('pinned_songs')
+    .delete()
+    .eq('id', targetId)
+    .select();
+
+  if (error || !data || data.length === 0) {
+    const errMsg = error?.message || 'Database delete rejected by security policy (Admin authentication required)';
+    console.warn('unpinSong failed:', errMsg);
+    return { success: false, error: errMsg };
+  }
+
+  const list = getPinnedSongs();
+  const updated = list.filter(s => s.id !== songId && s.slug !== songSlug);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('jhf_pinned_songs_changed', { detail: updated }));
 
-  // Cloud Remove from Supabase
-  if (isSupabaseConfigured && supabase) {
-    try {
-      if (songId) {
-        await supabase.from('pinned_songs').delete().eq('id', songId);
-      }
-      if (songSlug && songSlug !== songId) {
-        await supabase.from('pinned_songs').delete().eq('slug', songSlug);
-      }
-    } catch (err) {
-      console.warn('Failed to delete pinned song from Supabase:', err);
-    }
-  }
-
-  // Also sync to Vercel Serverless
-  syncToVercelApi(updated);
-
-  return updated;
+  return { success: true, songs: updated };
 }
 
 /**
  * Update the order/number of a pinned song
+ * Requires active Supabase admin authentication.
+ * Fails closed if database update fails.
  */
 export async function updatePinNumber(songId, newNumber) {
-  const list = getPinnedSongs();
-  const num = parseInt(newNumber, 10);
-  if (isNaN(num) || num < 1) return list;
+  if (!isSupabaseConfigured || !supabase) {
+    return { success: false, error: 'Database is not configured' };
+  }
 
+  const num = parseInt(newNumber, 10);
+  if (isNaN(num) || num < 1) return { success: false, error: 'Invalid pin number' };
+
+  const { data, error } = await supabase
+    .from('pinned_songs')
+    .update({ pin_number: num })
+    .eq('id', songId)
+    .select();
+
+  if (error || !data || data.length === 0) {
+    const errMsg = error?.message || 'Database update rejected by security policy (Admin authentication required)';
+    console.warn('updatePinNumber failed:', errMsg);
+    return { success: false, error: errMsg };
+  }
+
+  const list = getPinnedSongs();
   const updated = list.map(s => {
     if (s.id === songId || s.slug === songId) {
       return { ...s, pinNumber: num };
@@ -245,27 +243,5 @@ export async function updatePinNumber(songId, newNumber) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('jhf_pinned_songs_changed', { detail: updated }));
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase.from('pinned_songs').update({ pin_number: num }).eq('id', songId);
-    } catch (err) {
-      console.warn('Failed to update pin number in Supabase:', err);
-    }
-  }
-
-  syncToVercelApi(updated);
-  return updated;
-}
-
-/**
- * Helper to sync to Vercel serverless /api/pinned-songs if available
- */
-async function syncToVercelApi(songs) {
-  try {
-    await fetch('/api/pinned-songs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ songs, password: 'sherwin1990' })
-    });
-  } catch (_) {}
+  return { success: true, songs: updated };
 }

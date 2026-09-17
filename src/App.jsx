@@ -17,6 +17,8 @@ import AdminPublishModal from './components/AdminPublishModal';
 import PinnedSongsSection from './components/PinnedSongsSection';
 import { filterSongs } from './utils/search';
 import { fetchPinnedSongs } from './utils/pinManager';
+import { getCatalogIndex } from './services/catalogRepository';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
   const [songs, setSongs] = useState([]);
@@ -48,25 +50,11 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   
-  // Admin authentication and publishing
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return sessionStorage.getItem('jhf_is_admin') === 'true';
-  });
+  // Auth state derived securely from Supabase AuthContext
+  const { user, profile } = useAuth();
+  const isAdmin = Boolean(user && profile?.role === 'admin');
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminPublishOpen, setIsAdminPublishOpen] = useState(false);
-
-  // Synchronize admin state across modal unlocks
-  useEffect(() => {
-    const handleAdminSync = () => {
-      setIsAdmin(sessionStorage.getItem('jhf_is_admin') === 'true');
-    };
-    window.addEventListener('jhf_admin_changed', handleAdminSync);
-    window.addEventListener('storage', handleAdminSync);
-    return () => {
-      window.removeEventListener('jhf_admin_changed', handleAdminSync);
-      window.removeEventListener('storage', handleAdminSync);
-    };
-  }, []);
   
   // Dark mode (default to true for rich stage aesthetic, can toggle)
   const [darkMode, setDarkMode] = useState(() => {
@@ -100,28 +88,23 @@ export default function App() {
   // Load compact index and pinned songs once on boot
   useEffect(() => {
     fetchPinnedSongs();
-    fetch('./data/compact_index.json')
-      .then((res) => res.json())
-      .then((data) => {
-        let loaded = data || [];
-        // Merge locally published songs if any
+    getCatalogIndex()
+      .then(({ songs: loaded }) => {
+        setSongs(loaded || []);
+        setLoading(false);
+
+        // Direct song URL resolution by slug or UUID (?song=... or ?id=... or ?slug=... or #slug)
         try {
-          const localCustom = JSON.parse(localStorage.getItem('jhf_published_songs') || '[]');
-          if (localCustom.length > 0) {
-            const existingIds = new Set(loaded.map(s => s.id || s.slug));
-            const fresh = localCustom.filter(s => !existingIds.has(s.id) && !existingIds.has(s.slug));
-            loaded = [...fresh, ...loaded];
+          const searchParams = new URLSearchParams(window.location.search);
+          const targetParam = searchParams.get('song') || searchParams.get('id') || searchParams.get('slug') || window.location.hash.replace(/^#/, '');
+          if (targetParam && loaded && loaded.length > 0) {
+            const cleanTarget = decodeURIComponent(targetParam).trim();
+            const matched = loaded.find(s => s.slug === cleanTarget || s.id === cleanTarget);
+            if (matched) {
+              handleOpenSong(matched, false);
+            }
           }
         } catch (_) {}
-
-        // By default display Telugu songs starting
-        const sorted = [...loaded].sort((a, b) => {
-          const aTe = a.lang === 'telugu' ? 1 : 0;
-          const bTe = b.lang === 'telugu' ? 1 : 0;
-          return bTe - aTe;
-        });
-        setSongs(sorted);
-        setLoading(false);
       })
       .catch((err) => {
         console.error("Error loading songs index:", err);
@@ -141,8 +124,15 @@ export default function App() {
     });
   }, [songs, searchQuery, language, filterType, activeSongbook, alphabet, category]);
 
-  const handleOpenSong = (song) => {
+  const handleOpenSong = (song, updateUrl = true) => {
     setSelectedSong(song);
+    if (updateUrl && song) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('song', song.slug || song.id);
+        window.history.replaceState(null, '', url.toString());
+      } catch (_) {}
+    }
     // Smoothly scroll and redirect user focus to the song view
     setTimeout(() => {
       const detailEl =
@@ -156,6 +146,18 @@ export default function App() {
     }, 80);
   };
 
+  const handleCloseSong = () => {
+    setSelectedSong(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('song');
+      url.searchParams.delete('id');
+      url.searchParams.delete('slug');
+      const cleanUrl = url.pathname + (url.search ? url.search : '');
+      window.history.replaceState(null, '', cleanUrl);
+    } catch (_) {}
+  };
+
   const handleSelectSongbook = (book) => {
     setActiveSongbook(book);
     setFilterType('all');
@@ -167,17 +169,7 @@ export default function App() {
   };
 
   const handleOpenAdmin = () => {
-    if (isAdmin) {
-      setIsAdminPublishOpen(true);
-    } else {
-      setIsAdminLoginOpen(true);
-    }
-  };
-
-  const handleAdminLoginSuccess = () => {
-    setIsAdmin(true);
-    setIsAdminLoginOpen(false);
-    setIsAdminPublishOpen(true);
+    setIsAdminLoginOpen(true);
   };
 
   const handleSongPublished = (newSong, indexEntry) => {
@@ -306,7 +298,7 @@ export default function App() {
               >
                 <SongDetail
                   songSummary={selectedSong}
-                  onClose={() => setSelectedSong(null)}
+                  onClose={handleCloseSong}
                   onPlayMedia={(song) => setActiveMedia(song)}
                   activePlayingId={activeMedia?.id}
                   onOpenPresentation={(song) => setPresentationSong(song)}
@@ -374,7 +366,6 @@ export default function App() {
       <AdminLoginModal
         isOpen={isAdminLoginOpen}
         onClose={() => setIsAdminLoginOpen(false)}
-        onLoginSuccess={handleAdminLoginSuccess}
       />
 
       {/* Admin Publish Modal */}

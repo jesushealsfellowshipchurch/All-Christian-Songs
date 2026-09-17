@@ -8,6 +8,7 @@ import {
 import { transposeChordSheet, isChordLine } from '../utils/chordTransposer';
 import generateSongPptx from '../utils/pptGenerator';
 import { isSongPinned, pinSong, unpinSong } from '../utils/pinManager';
+import { getSong } from '../services/songRepository';
 
 export default function SongDetail({
   songSummary,
@@ -30,9 +31,8 @@ export default function SongDetail({
   const [pinnedStatus, setPinnedStatus] = useState({ isPinned: false, pinNumber: null });
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pinNumberInput, setPinNumberInput] = useState('');
-  const [isAdmin, setIsAdmin] = useState(() => propIsAdmin || sessionStorage.getItem('jhf_is_admin') === 'true');
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const [adminPasswordError, setAdminPasswordError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(() => propIsAdmin);
+  const [pinActionError, setPinActionError] = useState('');
 
   const videoId = song?.youtube_id || songSummary?.yt;
 
@@ -45,12 +45,9 @@ export default function SongDetail({
     setShowVideo(false);
 
     const target = songSummary.slug || songSummary.id;
-    fetch(`./data/songs/${target}.json`)
-      .then(res => {
-        if (!res.ok) throw new Error("Could not load song");
-        return res.json();
-      })
+    getSong(target)
       .then(data => {
+        if (!data) throw new Error("Could not load song");
         setSong(data);
         // Default to chords view if chords available and requested
         if (data.chords && data.chords.length > 0 && songSummary.chords) {
@@ -61,29 +58,15 @@ export default function SongDetail({
         setLoading(false);
       })
       .catch(err => {
-        try {
-          const cached = localStorage.getItem(`jhf_song_${target}`) || localStorage.getItem(`jhf_song_${songSummary.id}`);
-          if (cached) {
-            const data = JSON.parse(cached);
-            setSong(data);
-            if (data.chords && data.chords.length > 0 && songSummary.chords) {
-              setViewMode('chords');
-            } else {
-              setViewMode('lyrics');
-            }
-            setLoading(false);
-            return;
-          }
-        } catch (_) {}
         console.error("Error loading song:", err);
         setLoading(false);
       });
-  }, [songSummary?.id]);
+  }, [songSummary?.id, songSummary?.slug]);
 
   // Sync admin state and pin status
   useEffect(() => {
     const updatePinInfo = () => {
-      setIsAdmin(propIsAdmin || sessionStorage.getItem('jhf_is_admin') === 'true');
+      setIsAdmin(propIsAdmin);
       const targetId = song?.id || songSummary?.id;
       const targetSlug = song?.slug || songSummary?.slug;
       setPinnedStatus(isSongPinned(targetId, targetSlug));
@@ -91,18 +74,15 @@ export default function SongDetail({
 
     updatePinInfo();
     window.addEventListener('jhf_pinned_songs_changed', updatePinInfo);
-    window.addEventListener('jhf_admin_changed', updatePinInfo);
     window.addEventListener('storage', updatePinInfo);
     return () => {
       window.removeEventListener('jhf_pinned_songs_changed', updatePinInfo);
-      window.removeEventListener('jhf_admin_changed', updatePinInfo);
       window.removeEventListener('storage', updatePinInfo);
     };
   }, [song?.id, songSummary?.id, propIsAdmin]);
 
   const handleTogglePin = () => {
-    setAdminPasswordInput('');
-    setAdminPasswordError('');
+    setPinActionError('');
     if (pinnedStatus.isPinned) {
       setPinNumberInput(String(pinnedStatus.pinNumber || 1));
     } else {
@@ -113,51 +93,33 @@ export default function SongDetail({
 
   const handleConfirmPin = async (e) => {
     if (e) e.preventDefault();
-
     if (!isAdmin) {
-      const pass = adminPasswordInput.trim();
-      if (!pass) {
-        setAdminPasswordError('Please enter the admin password');
-        return;
-      }
-      if (pass !== 'sherwin1990') {
-        setAdminPasswordError('Incorrect admin password. Please try again.');
-        return;
-      }
-
-      // Valid password: grant admin privileges and broadcast
-      sessionStorage.setItem('jhf_is_admin', 'true');
-      setIsAdmin(true);
-      window.dispatchEvent(new CustomEvent('jhf_admin_changed', { detail: { isAdmin: true } }));
+      setPinActionError('Administrator privileges required.');
+      return;
     }
 
-    await pinSong(song || songSummary, pinNumberInput || null);
+    const res = await pinSong(song || songSummary, pinNumberInput || null);
+    if (!res.success) {
+      setPinActionError(res.error || 'Failed to pin song in database');
+      return;
+    }
     setShowPinPrompt(false);
-    setAdminPasswordInput('');
-    setAdminPasswordError('');
+    setPinActionError('');
   };
 
   const handleUnpin = async () => {
     if (!isAdmin) {
-      const pass = adminPasswordInput.trim();
-      if (!pass) {
-        setAdminPasswordError('Please enter the admin password to unpin');
-        return;
-      }
-      if (pass !== 'sherwin1990') {
-        setAdminPasswordError('Incorrect admin password. Please try again.');
-        return;
-      }
-
-      sessionStorage.setItem('jhf_is_admin', 'true');
-      setIsAdmin(true);
-      window.dispatchEvent(new CustomEvent('jhf_admin_changed', { detail: { isAdmin: true } }));
+      setPinActionError('Administrator privileges required.');
+      return;
     }
 
-    await unpinSong(song?.id || songSummary?.id, song?.slug || songSummary?.slug);
+    const res = await unpinSong(song?.id || songSummary?.id, song?.slug || songSummary?.slug);
+    if (!res.success) {
+      setPinActionError(res.error || 'Failed to unpin song in database');
+      return;
+    }
     setShowPinPrompt(false);
-    setAdminPasswordInput('');
-    setAdminPasswordError('');
+    setPinActionError('');
   };
 
   const handleCopy = () => {
@@ -191,13 +153,7 @@ export default function SongDetail({
       if (!songData || !songData.lyrics_original) {
         const target = songSummary?.slug || songSummary?.id;
         if (target) {
-          const res = await fetch(`./data/songs/${target}.json`);
-          if (res.ok) {
-            songData = await res.json();
-          } else {
-            const cached = localStorage.getItem(`jhf_song_${target}`) || localStorage.getItem(`jhf_song_${songSummary?.id}`);
-            if (cached) songData = JSON.parse(cached);
-          }
+          songData = await getSong(target);
         }
       }
       if (!songData) {
@@ -705,7 +661,7 @@ export default function SongDetail({
               <div>
                 <h3 className="text-base font-bold text-white">
                   {!isAdmin 
-                    ? "Admin Password Required" 
+                    ? "Admin Privileges Required" 
                     : (pinnedStatus.isPinned ? "Update Pinned Song" : "Pin to Landing Page")}
                 </h3>
                 <p className="text-xs text-slate-400">Featured Today's Service Song</p>
@@ -714,92 +670,79 @@ export default function SongDetail({
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
               {!isAdmin 
-                ? "Enter the church admin password to pin this song for Sunday worship service on the Landing Page." 
+                ? "Pinned songs can only be modified by church administrators. Legacy password access has been decommissioned." 
                 : "Pinned songs are highlighted right at the top of the church landing page with their order numbers (#1, #2, #3...)."}
             </p>
 
-            {adminPasswordError && (
+            {pinActionError && (
               <div className="mb-4 p-3 bg-red-950/60 border border-red-500/40 rounded-xl flex items-center gap-2 text-xs text-red-300">
                 <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                <span>{adminPasswordError}</span>
+                <span>{pinActionError}</span>
               </div>
             )}
 
-            <form onSubmit={handleConfirmPin} className="space-y-4">
-              {!isAdmin && (
-                <div>
-                  <label className="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>Admin Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={adminPasswordInput}
-                    onChange={(e) => {
-                      setAdminPasswordInput(e.target.value);
-                      if (adminPasswordError) setAdminPasswordError('');
-                    }}
-                    placeholder="Enter password..."
-                    autoFocus
-                    required
-                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 placeholder-slate-500"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1.5">
-                  Pin / Worship Order Number
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={pinNumberInput}
-                  onChange={(e) => setPinNumberInput(e.target.value)}
-                  placeholder="e.g. 1 (Leave empty for next available)"
-                  autoFocus={isAdmin}
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 placeholder-slate-500"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                {pinnedStatus.isPinned && (
-                  <button
-                    type="button"
-                    onClick={handleUnpin}
-                    className="py-2.5 px-3 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl text-xs font-bold transition flex items-center gap-1"
-                  >
-                    <PinOff className="w-3.5 h-3.5" />
-                    <span>Unpin</span>
-                  </button>
-                )}
-
+            {!isAdmin ? (
+              <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowPinPrompt(false);
-                    setAdminPasswordInput('');
-                    setAdminPasswordError('');
+                    setPinActionError('');
                   }}
-                  className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                  className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
                 >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1"
-                >
-                  {!isAdmin ? (
-                    <>
-                      <span>Unlock & Pin 📌</span>
-                    </>
-                  ) : (
-                    pinnedStatus.isPinned ? "Save Number" : "Pin Song 📌"
-                  )}
+                  Close
                 </button>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleConfirmPin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1.5">
+                    Pin / Worship Order Number
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={pinNumberInput}
+                    onChange={(e) => setPinNumberInput(e.target.value)}
+                    placeholder="e.g. 1 (Leave empty for next available)"
+                    autoFocus
+                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 placeholder-slate-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  {pinnedStatus.isPinned && (
+                    <button
+                      type="button"
+                      onClick={handleUnpin}
+                      className="py-2.5 px-3 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                    >
+                      <PinOff className="w-3.5 h-3.5" />
+                      <span>Unpin</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPinPrompt(false);
+                      setPinActionError('');
+                    }}
+                    className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1"
+                  >
+                    {pinnedStatus.isPinned ? "Save Number" : "Pin Song 📌"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Music, ChevronRight } from 'lucide-react';
+import { getSongbooks } from '../services/catalogRepository';
 
 export default function SongbooksModal({
   isOpen,
@@ -12,9 +13,8 @@ export default function SongbooksModal({
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    fetch('./data/songbooks.json')
-      .then(res => res.json())
-      .then(data => {
+    getSongbooks()
+      .then(({ songbooks: data }) => {
         setSongbooks(data || []);
         setLoading(false);
       })

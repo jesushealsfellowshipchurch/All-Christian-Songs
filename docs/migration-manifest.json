@@ -1,0 +1,83 @@
+{
+  "project": "All Christian Songs",
+  "phase": "0 — Safety / Backup / Git Checkpoint",
+  "generated_at": "2026-09-17T10:50:00+05:30",
+  "validation_status": "PASS",
+  "catalog": {
+    "total_songs": 3773,
+    "unique_uuids": 3773,
+    "unique_slugs": 3773,
+    "duplicate_uuids": 0,
+    "duplicate_slugs": 0,
+    "missing_titles": 0,
+    "missing_lyrics": 0,
+    "songs_with_lyrics": 3773
+  },
+  "languages": {
+    "telugu": 3344,
+    "english": 396,
+    "hindi": 33,
+    "total_languages": 3
+  },
+  "categories": {
+    "total_unique": 18
+  },
+  "songbooks": {
+    "total": 8,
+    "names": [
+      "Andhra Kraisthava Keerthanalu",
+      "Hosanna Ministries",
+      "Vidhyaarthi Geethaavali",
+      "Songs of Zion",
+      "Joyful Journey",
+      "Sunday School",
+      "Pallavulu",
+      "Choruses"
+    ]
+  },
+  "features": {
+    "songs_with_chords": 148,
+    "songs_with_youtube": 2426,
+    "songs_with_ppt": 3664,
+    "songs_with_devotional": 3662
+  },
+  "files": {
+    "total_song_json_files": 7546,
+    "uuid_named_files": 3773,
+    "slug_named_files": 3773,
+    "note": "Each song has two identical JSON files: one named by UUID, one named by URL-encoded slug"
+  },
+  "source_paths": {
+    "compact_index": "public/data/compact_index.json",
+    "songbooks": "public/data/songbooks.json",
+    "song_files": "public/data/songs/",
+    "pinned_songs_fallback": "public/data/pinned_songs.json"
+  },
+  "schema": {
+    "compact_index_fields": ["id", "slug", "t", "tr", "lang", "alpha", "chords", "video", "yt", "ppt", "cats", "books", "auth", "search"],
+    "full_song_fields": ["id", "slug", "title", "title_transliterated", "language", "alphabet", "lyrics_original", "lyrics_transliterated", "youtube_id", "chords", "chord_count", "chord_credits", "author_english", "author_telugu", "category_names", "songbooks", "ppt_url", "bible_verses", "devotional"]
+  },
+  "git": {
+    "branch": "main",
+    "latest_commit": "82f82cd",
+    "unstaged_changes": ["src/components/Footer.jsx (minor, 6 lines)"]
+  },
+  "supabase": {
+    "project_url": "https://hxfeluhttsifwmwltjmj.supabase.co",
+    "existing_tables": ["pinned_songs"],
+    "existing_storage": ["song-ppts (on zeabwyivgsfexgvsnipf.supabase.co)"],
+    "auth_enabled": false,
+    "rls_status": "unknown"
+  },
+  "build": {
+    "tool": "vite v5.4.21",
+    "status": "PASS",
+    "duration": "1m 13s",
+    "warnings": ["Chunk size > 500kB (index-Df8Qi4W8.js: 928.84kB)"],
+    "output_files": [
+      "dist/index.html (1.27kB)",
+      "dist/assets/index-DYd6kqNg.css (84.87kB)",
+      "dist/assets/index-Df8Qi4W8.js (928.84kB)"
+    ]
+  }
+}

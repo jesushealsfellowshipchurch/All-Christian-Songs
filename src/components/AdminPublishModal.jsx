@@ -246,67 +246,8 @@ export default function AdminPublishModal({ isOpen, onClose, onSongPublished }) 
     };
 
     try {
-      // 1. Try sending to Vite Backend Endpoint to save directly to disk
-      const res = await fetch('/api/admin/publish-song', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json().catch(() => ({}));
-
-      if (res.ok && result.success) {
-        if (pinToLanding) {
-          pinSong(result.song, pinNumberToSet || null);
-        }
-        setSuccessData(result);
-        if (onSongPublished) {
-          onSongPublished(result.song, result.indexEntry);
-        }
-      } else {
-        // Fallback for static client preview
-        const generatedId = crypto.randomUUID();
-        const slug = (payload.title_transliterated || payload.title)
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-') || generatedId;
-
-        const fallbackSong = { ...payload, id: generatedId, slug };
-        const fallbackIndex = {
-          id: generatedId,
-          slug,
-          t: payload.title,
-          tr: payload.title_transliterated || '',
-          lang: payload.language,
-          alpha: payload.title.charAt(0).toUpperCase(),
-          chords: !!payload.chords,
-          video: !!payload.youtube_id,
-          yt: payload.youtube_id || '',
-          ppt: true, // Auto-generated on-demand PPTX is available for all published songs!
-          cats: payload.category_names,
-          books: payload.songbooks,
-          auth: payload.author_english || payload.author_telugu || '',
-          search: `${payload.title} ${payload.title_transliterated} ${payload.author_english || ''}`.toLowerCase()
-        };
-
-        // Cache in localStorage
-        try {
-          const stored = JSON.parse(localStorage.getItem('jhf_published_songs') || '[]');
-          stored.unshift(fallbackIndex);
-          localStorage.setItem('jhf_published_songs', JSON.stringify(stored));
-          localStorage.setItem(`jhf_song_${slug}`, JSON.stringify(fallbackSong));
-          localStorage.setItem(`jhf_song_${generatedId}`, JSON.stringify(fallbackSong));
-        } catch (_) {}
-
-        if (pinToLanding) {
-          pinSong(fallbackSong, pinNumberToSet || null);
-        }
-
-        setSuccessData({ song: fallbackSong, indexEntry: fallbackIndex });
-        if (onSongPublished) {
-          onSongPublished(fallbackSong, fallbackIndex);
-        }
-      }
+      // Direct publishing is disabled pending Supabase Auth migration
+      setError('Song publishing is currently disabled pending Supabase Auth integration. No changes were written to the database.');
     } catch (err) {
       console.error('Publish error:', err);
       setError(err.message || 'Error publishing song');

@@ -265,12 +265,12 @@ export default function Header({
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' 
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`}
-                  title={isAdmin ? "Publish New Song" : "Admin Login"}
+                  title={isAdmin ? "Admin Portal (Signed In)" : "Admin Portal (Sign In)"}
                 >
                   {isAdmin ? (
                     <>
-                      <Plus className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Add Song</span>
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Admin</span>
                     </>
                   ) : (
                     <>
@@ -501,11 +501,11 @@ export default function Header({
               }`}
             >
               <span className="flex items-center gap-2">
-                {isAdmin ? <Plus className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
-                <span>{isAdmin ? 'Publish New Song' : 'Admin Portal'}</span>
+                {isAdmin ? <ShieldCheck className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
+                <span>Admin Portal</span>
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                {isAdmin ? 'Active' : 'Login'}
+                {isAdmin ? 'Signed In' : 'Sign In'}
               </span>
             </button>
           </div>

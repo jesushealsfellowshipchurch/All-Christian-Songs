@@ -1,0 +1,263 @@
+{
+  "timestamp": "2026-09-17T09:40:57.969Z",
+  "boot": {
+    "totalRows": 3773,
+    "expectedRows": 3773,
+    "uniqueIds": 3773,
+    "uniqueSlugs": 3773,
+    "source": "supabase",
+    "headCountQueryTimeMs": 316,
+    "fullCatalogBootTimeMs": 1093,
+    "cachedCatalogCallTimeMs": 0,
+    "networkRequestsForCatalog": 5,
+    "pass": true
+  },
+  "search": {
+    "benchmarks": [
+      {
+        "label": "Telugu exact token (\"యేసు\")",
+        "count": 441,
+        "durationMs": 3.03
+      },
+      {
+        "label": "Telugu transliteration (\"yesu\")",
+        "count": 439,
+        "durationMs": 1.39
+      },
+      {
+        "label": "English query (\"praise the lord\")",
+        "count": 2,
+        "durationMs": 1.29
+      },
+      {
+        "label": "Hindi query (\"आत्मा\")",
+        "count": 2,
+        "durationMs": 0.85
+      },
+      {
+        "label": "Chords filter only",
+        "count": 148,
+        "durationMs": 0.11
+      },
+      {
+        "label": "Video filter only",
+        "count": 2426,
+        "durationMs": 0.15
+      },
+      {
+        "label": "PPT filter only",
+        "count": 3664,
+        "durationMs": 0.19
+      },
+      {
+        "label": "Category filter (\"Worship Songs\")",
+        "count": 1533,
+        "durationMs": 3.38
+      },
+      {
+        "label": "Songbook filter (\"andhra-kraisthava-keerthanalu\")",
+        "count": 773,
+        "durationMs": 1.01
+      },
+      {
+        "label": "Letter filter (\"క\")",
+        "count": 200,
+        "durationMs": 1.05
+      },
+      {
+        "label": "Complex multi-filter (Telugu + Worship + Chords + \"యేసు\")",
+        "count": 2,
+        "durationMs": 0.29
+      }
+    ],
+    "suggestionBenchmarkMs": 3.76,
+    "suggestionCount": 8,
+    "networkRequestsDuringSearch": 0,
+    "allSearchesUnder10ms": true
+  },
+  "songDetail": {
+    "coldFetchSlugMs": 212,
+    "warmFetchSlugMs": 0,
+    "warmFetchUuidMs": 0,
+    "coldFetchSecondSongMs": 199,
+    "cacheHitZeroLatency": true,
+    "pass": true
+  },
+  "caching": {
+    "catalogMemoryCached": true,
+    "catalogCacheLatencyMs": 0,
+    "songMemoryCached": true,
+    "songSlugCacheLatencyMs": 0,
+    "songUuidCacheLatencyMs": 0,
+    "reopeningAlreadyLoadedSongNetworkCalls": 0,
+    "pass": true
+  },
+  "fallback": {
+    "catalogFallbackWorks": true,
+    "catalogFallbackTimeMs": 15.91,
+    "songFallbackWorks": true,
+    "songFallbackTimeMs": 2.69,
+    "userExposedErrors": false,
+    "pass": true
+  },
+  "songbooks": {
+    "count": 8,
+    "expectedCount": 8,
+    "source": "supabase",
+    "fetchTimeMs": 188,
+    "cacheTimeMs": 0,
+    "pass": true
+  },
+  "network": {
+    "bootRequests": {
+      "headCountRequests": 1,
+      "rangeBatchRequests": 4,
+      "totalCatalogRequests": 5,
+      "songbooksRequests": 1,
+      "pinnedSongRequests": 1,
+      "totalBootRequests": 7
+    },
+    "payloadSizes": {
+      "catalogUncompressedBytes": 1816527,
+      "catalogUncompressedMb": 1.73,
+      "songDetailAverageBytes": 10364,
+      "songDetailAverageKb": 10.12
+    },
+    "searchKeystrokeRequests": 0,
+    "filterChangeRequests": 0,
+    "zeroNetworkOnSearchVerified": true,
+    "pass": true
+  },
+  "memory": {
+    "songsNavigated": 10,
+    "coldNavTimings": [
+      {
+        "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+        "durationMs": 0.01,
+        "found": true
+      },
+      {
+        "slug": "when-its-all-been-said-and-done",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "pavithra-aathmaa-aa",
+        "durationMs": 159.88,
+        "found": true
+      },
+      {
+        "slug": "aanandamugaa-yehovaa-nee",
+        "durationMs": 164.01,
+        "found": true
+      },
+      {
+        "slug": "swachchandha-seeyonu-vaasi",
+        "durationMs": 187.95,
+        "found": true
+      },
+      {
+        "slug": "idiyenayya-maa-praarthana",
+        "durationMs": 164.86,
+        "found": true
+      },
+      {
+        "slug": "a-mighty-fortress-is-our-god",
+        "durationMs": 190.57,
+        "found": true
+      },
+      {
+        "slug": "abide-with-me",
+        "durationMs": 192.43,
+        "found": true
+      },
+      {
+        "slug": "ankitham-prabhu-naa-jeevitham",
+        "durationMs": 192.69,
+        "found": true
+      },
+      {
+        "slug": "hallelujah-ani-paaduchu",
+        "durationMs": 188.3,
+        "found": true
+      }
+    ],
+    "cachedNavTimings": [
+      {
+        "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+        "durationMs": 0.01,
+        "found": true
+      },
+      {
+        "slug": "when-its-all-been-said-and-done",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "pavithra-aathmaa-aa",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "aanandamugaa-yehovaa-nee",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "swachchandha-seeyonu-vaasi",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "idiyenayya-maa-praarthana",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "a-mighty-fortress-is-our-god",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "abide-with-me",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "ankitham-prabhu-naa-jeevitham",
+        "durationMs": 0,
+        "found": true
+      },
+      {
+        "slug": "hallelujah-ani-paaduchu",
+        "durationMs": 0,
+        "found": true
+      }
+    ],
+    "heapDeltaKb": 1591.09,
+    "cachedAverageMs": 0
+  },
+  "security": {
+    "srcScanned": true,
+    "distScanned": true,
+    "secretsFoundCount": 0,
+    "violatingFiles": [],
+    "pass": true
+  },
+  "comparison": {
+    "catalog": {
+      "supabaseMs": 1093,
+      "staticMs": 14,
+      "differenceMs": 1079
+    },
+    "songDetail": {
+      "supabaseMs": 212,
+      "staticMs": 1,
+      "cachedMs": 0
+    },
+    "songbooks": {
+      "supabaseMs": 188,
+      "staticMs": 0
+    }
+  }
+}

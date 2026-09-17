@@ -1,0 +1,105 @@
+{
+  "phase": "Phase 3 — Song Migration Preparation & Validation",
+  "date": "2026-09-17",
+  "total_songs": 3773,
+  "uuid_uniqueness": {
+    "total": 3773,
+    "duplicates": 0
+  },
+  "slug_uniqueness": {
+    "total": 3773,
+    "duplicates": 0
+  },
+  "language_counts": {
+    "telugu": 3344,
+    "english": 396,
+    "hindi": 33
+  },
+  "empty_string_stanza_separators": 14192,
+  "category_stats": {
+    "canonical_categories_count": 18,
+    "songs_with_categories": 3663,
+    "songs_with_empty_categories": 110,
+    "counts": {
+      "Easter Songs": 38,
+      "Gospel Songs": 629,
+      "Hope Songs": 838,
+      "Praise Songs": 1574,
+      "Worship Songs": 1533,
+      "Encouraging Songs": 1158,
+      "Sunday School Songs": 55,
+      "Thanksgiving Songs": 218,
+      "Prayer Songs": 324,
+      "Comfort Songs": 317,
+      "Commitment Songs": 346,
+      "Repentance Songs": 265,
+      "Correction Songs": 129,
+      "Second Coming Songs": 89,
+      "Good Friday Songs": 111,
+      "Marriage Songs": 25,
+      "Christmas Songs": 159,
+      "Offering Songs": 20
+    }
+  },
+  "songbook_stats": {
+    "total_songbooks": 8,
+    "songs_with_at_least_one_book": 2103,
+    "total_associations": 2291,
+    "associations_by_book": {
+      "andhra-kraisthava-keerthanalu": {
+        "id": "4cd29823-061b-4b97-bff2-8da0a4009231",
+        "count": 773
+      },
+      "hosanna-ministries": {
+        "id": "b93b9357-4685-406b-bb61-89985702fb0a",
+        "count": 195
+      },
+      "vidhyaarthi-geethaavali": {
+        "id": "c413c35a-3a51-4037-b574-22b8df8be5ea",
+        "count": 143
+      },
+      "songs-of-zion": {
+        "id": "867aab57-325d-4930-82be-63ced95d28cf",
+        "count": 838
+      },
+      "joyful-journey": {
+        "id": "9d471f55-2636-4229-9727-02ab632b0bb5",
+        "count": 288
+      },
+      "joyful-journey-sunday-school": {
+        "id": "102087d1-4047-47f2-b2f8-950940dff338",
+        "count": 12
+      },
+      "joyful-journey-pallavulu": {
+        "id": "f4475f55-c6a9-4383-85ce-fe4a0bc919c0",
+        "count": 32
+      },
+      "joyful-journey-choruses": {
+        "id": "2d423415-cb9c-41ac-8dfa-1febe280e85b",
+        "count": 10
+      }
+    }
+  },
+  "feature_counts": {
+    "chords": 148,
+    "youtube": 2426,
+    "ppt": 3664,
+    "bible_verses": 3662,
+    "devotional": 3662
+  },
+  "anomalies": [
+    {
+      "type": "missing_transliteration_telugu",
+      "song_id": "8f78a3b0-2716-4f0f-b10a-66f5b2000dda",
+      "slug": "hallelujah-ani-paaduchu",
+      "note": "Telugu song has empty lyrics_transliterated"
+    },
+    {
+      "type": "legacy_ppt_url_domain",
+      "song_id": "97aff3c1-3acc-4dd7-9e84-c7c1141b0f97",
+      "slug": "idiyenayya-maa-praarthana",
+      "ppt_url": "https://www.christiansongslyrics4us.com/wp-content/uploads/Idiyenayya-Maa-Praarthana.pptx",
+      "note": "PPT URL references legacy domain instead of Supabase storage"
+    }
+  ]
+}

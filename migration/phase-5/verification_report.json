@@ -1,0 +1,315 @@
+{
+  "phase": "Phase 5 — Independent Database Integrity Verification",
+  "timestamp": "2026-09-17T09:15:30.000Z",
+  "overall_status": "PASS",
+  "database_project": "hxfeluhttsifwmwltjmj",
+  "verification_mode": "READ_ONLY",
+  "row_counts": {
+    "songs": {
+      "expected": 3773,
+      "actual": 3773,
+      "mismatch": 0,
+      "match": true
+    },
+    "songbook_songs": {
+      "expected": 2291,
+      "actual": 2291,
+      "mismatch": 0,
+      "match": true
+    },
+    "pinned_songs": {
+      "expected": 1,
+      "actual": 1,
+      "mismatch": 0,
+      "match": true
+    },
+    "languages": {
+      "expected": 3,
+      "actual": 3,
+      "mismatch": 0,
+      "match": true
+    },
+    "categories": {
+      "expected": 18,
+      "actual": 18,
+      "mismatch": 0,
+      "match": true
+    },
+    "songbooks": {
+      "expected": 8,
+      "actual": 8,
+      "mismatch": 0,
+      "match": true
+    }
+  },
+  "song_identity": {
+    "expected_uuids": 3773,
+    "actual_uuids": 3773,
+    "unique_uuids": 3773,
+    "unique_slugs": 3773,
+    "missing_source_uuids": 0,
+    "unexpected_db_uuids": 0,
+    "slug_mismatches": 0,
+    "match": true
+  },
+  "language_distribution": {
+    "telugu": {
+      "expected": 3344,
+      "actual": 3344,
+      "match": true
+    },
+    "english": {
+      "expected": 396,
+      "actual": 396,
+      "match": true
+    },
+    "hindi": {
+      "expected": 33,
+      "actual": 33,
+      "match": true
+    }
+  },
+  "required_data": {
+    "missing_titles": 0,
+    "missing_languages": 0,
+    "missing_alphabets": 0,
+    "missing_lyrics_original": 0,
+    "match": true
+  },
+  "array_fidelity": {
+    "lyrics_original_empty_separators": {
+      "expected": 14192,
+      "actual": 14192,
+      "match": true
+    },
+    "lyrics_original_exact_match_songs": {
+      "expected": 3773,
+      "actual": 3773,
+      "match": true
+    },
+    "lyrics_transliterated_exact_match_songs": {
+      "expected": 3773,
+      "actual": 3773,
+      "match": true
+    },
+    "category_names_exact_match_songs": {
+      "expected": 3773,
+      "actual": 3773,
+      "match": true
+    },
+    "chords_exact_match_songs": {
+      "expected": 3773,
+      "actual": 3773,
+      "match": true
+    }
+  },
+  "optional_fields": {
+    "title_transliterated": {
+      "expected": 3381,
+      "actual": 3381,
+      "note": "Exact match with source non-empty titles (3,342 Telugu, 6 English, 33 Hindi; 392 source empty strings mapped to NULL)",
+      "match": true
+    },
+    "youtube_id": {
+      "expected": 2426,
+      "actual": 2426,
+      "match": true
+    },
+    "chords": {
+      "expected": 148,
+      "actual": 148,
+      "match": true
+    },
+    "chord_count": {
+      "expected": 148,
+      "actual": 148,
+      "match": true
+    },
+    "chord_credits": {
+      "expected": 148,
+      "actual": 148,
+      "match": true
+    },
+    "ppt_url": {
+      "expected": 3664,
+      "actual": 3664,
+      "match": true
+    },
+    "bible_verses": {
+      "expected": 3662,
+      "actual": 3662,
+      "match": true
+    },
+    "devotional": {
+      "expected": 3662,
+      "actual": 3662,
+      "match": true
+    }
+  },
+  "categories": {
+    "categorized_songs": {
+      "expected": 3663,
+      "actual": 3663,
+      "match": true
+    },
+    "empty_category_songs": {
+      "expected": 110,
+      "actual": 110,
+      "match": true
+    },
+    "unknown_categories_in_db": []
+  },
+  "songbooks": {
+    "unique_songs_associated": {
+      "expected": 2103,
+      "actual": 2103,
+      "match": true
+    },
+    "total_junction_rows": {
+      "expected": 2291,
+      "actual": 2291,
+      "match": true
+    },
+    "duplicate_junction_pairs": 0,
+    "invalid_song_references": 0,
+    "invalid_songbook_references": 0,
+    "distribution": {
+      "1_book": {
+        "expected": 1939,
+        "actual": 1939,
+        "match": true
+      },
+      "2_books": {
+        "expected": 140,
+        "actual": 140,
+        "match": true
+      },
+      "3_books": {
+        "expected": 24,
+        "actual": 24,
+        "match": true
+      }
+    }
+  },
+  "jsonb_fidelity": {
+    "songbooks_exact_match": 3773,
+    "bible_verses_exact_match": 3773,
+    "devotional_exact_match": 3773,
+    "match": true
+  },
+  "ppt_url_fidelity": {
+    "total_ppt_urls": 3664,
+    "supabase_storage_count": 3663,
+    "legacy_domain_count": 1,
+    "legacy_domain_song_id": "97aff3c1-3acc-4dd7-9e84-c7c1141b0f97",
+    "legacy_domain_url": "https://www.christiansongslyrics4us.com/wp-content/uploads/Idiyenayya-Maa-Praarthana.pptx",
+    "legacy_domain_match": true
+  },
+  "pinned_song_safety": {
+    "id": "20f645d3-730c-40e0-9155-851f219c8acc",
+    "title_transliterated": "Ankitham Prabhu Naa Jeevitham",
+    "pin_number": 1,
+    "intact": true
+  },
+  "spot_checks": [
+    {
+      "label": "Telugu standard",
+      "id": "0008c794-4a6c-4407-9df1-442d5a3b93ad",
+      "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+      "title": "లేచినాడురా సమాధి గెలిచినాడురా",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "English song",
+      "id": "0082d78b-b28c-4470-be36-d46806ed2223",
+      "slug": "when-its-all-been-said-and-done",
+      "title": "When It's All Been Said and Done",
+      "language": "english",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Hindi song",
+      "id": "0291bf2e-d64a-4ece-a4d1-deb93832ab30",
+      "slug": "pavithra-aathmaa-aa",
+      "title": "पवित्र आत्मा आ",
+      "language": "hindi",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Song with chords",
+      "id": "032f8512-a2be-46ec-8e4c-22342a813726",
+      "slug": "aanandamugaa-yehovaa-nee",
+      "title": "ఆనందముగా యెహోవా నీ",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Song with YouTube",
+      "id": "0008c794-4a6c-4407-9df1-442d5a3b93ad",
+      "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+      "title": "లేచినాడురా సమాధి గెలిచినాడురా",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Song with PPT",
+      "id": "0008c794-4a6c-4407-9df1-442d5a3b93ad",
+      "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+      "title": "లేచినాడురా సమాధి గెలిచినాడురా",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Song with Bible verses",
+      "id": "0008c794-4a6c-4407-9df1-442d5a3b93ad",
+      "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+      "title": "లేచినాడురా సమాధి గెలిచినాడురా",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Song with Devotional",
+      "id": "0008c794-4a6c-4407-9df1-442d5a3b93ad",
+      "slug": "lechinaaduraa-samaadhi-gelichinaaduraa",
+      "title": "లేచినాడురా సమాధి గెలిచినాడురా",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Song with multiple books (3)",
+      "id": "09277925-e395-4f83-8d0c-1fca0a52586e",
+      "slug": "swachchandha-seeyonu-vaasi",
+      "title": "స్వఛ్చంద సీయోను వాసి",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    },
+    {
+      "label": "Legacy PPT domain",
+      "id": "97aff3c1-3acc-4dd7-9e84-c7c1141b0f97",
+      "slug": "idiyenayya-maa-praarthana",
+      "title": "ఇదియేనయ్య మా ప్రార్థన",
+      "language": "telugu",
+      "verified_in_db": true,
+      "perfect_match": true
+    }
+  ],
+  "security_observations": {
+    "verification_mode": "100% READ_ONLY (SELECT queries only)",
+    "rls_status": "ENABLED on all tables (songs, songbook_songs, pinned_songs, profiles, languages, categories, songbooks)",
+    "anonymous_write_protection": "CONFIRMED BLOCKED (Phase 2.1 hardening verified)",
+    "admin_write_protection": "CONFIRMED ENFORCED via public.is_admin() helper"
+  },
+  "mismatches": [],
+  "mismatches_count": 0,
+  "final_recommendation": "Phase 5 PASS. The live Supabase PostgreSQL database is demonstrably and 100% consistent with the pre-migration source catalog. Proceed to Phase 6 (Application Client Switch / Read Cutover) upon explicit user approval."
+}
