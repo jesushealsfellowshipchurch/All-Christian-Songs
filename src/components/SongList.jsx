@@ -3,6 +3,7 @@ import { Guitar, Video, FileText, ChevronRight, Play, Music, Sparkles, Heart, Pi
 import BrowseByCategory from './BrowseByCategory';
 import BrowseByLetter from './BrowseByLetter';
 import { getPinnedSongs } from '../utils/pinManager';
+import { useFeatures } from '../context/FeatureContext';
 
 const PAGE_SIZE = 36;
 
@@ -22,6 +23,7 @@ export default function SongList({
   favorites = [],
   onToggleFavorite
 }) {
+  const { isFeatureEnabled } = useFeatures();
   const [currentPage, setCurrentPage] = useState(1);
   const [pinnedMap, setPinnedMap] = useState({});
 
@@ -130,23 +132,25 @@ export default function SongList({
                     </h3>
 
                     {/* Favorite Heart Toggle */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onToggleFavorite) onToggleFavorite(song.id);
-                      }}
-                      className="p-1 text-slate-400 hover:text-rose-500 rounded-md transition shrink-0"
-                      title={favorites.includes(song.id) ? "Remove from favorites" : "Add to favorites"}
-                    >
-                      <Heart
-                        className={`w-3.5 h-3.5 ${
-                          favorites.includes(song.id)
-                            ? 'text-rose-500 fill-rose-500'
-                            : 'text-slate-400 hover:text-rose-400'
-                        }`}
-                      />
-                    </button>
+                    {isFeatureEnabled('personal_favorites') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onToggleFavorite) onToggleFavorite(song.id);
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-500 rounded-md transition shrink-0"
+                        title={favorites.includes(song.id) ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <Heart
+                          className={`w-3.5 h-3.5 ${
+                            favorites.includes(song.id)
+                              ? 'text-rose-500 fill-rose-500'
+                              : 'text-slate-400 hover:text-rose-400'
+                          }`}
+                        />
+                      </button>
+                    )}
                   </div>
 
                   {/* Transliterated English title */}

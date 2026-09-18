@@ -10,6 +10,7 @@ import generateSongPptx from '../utils/pptGenerator';
 import { isSongPinned, pinSong, unpinSong } from '../utils/pinManager';
 import { getSong } from '../services/songRepository';
 import { useAuth } from '../context/AuthContext';
+import { useFeatures } from '../context/FeatureContext';
 
 export default function SongDetail({
   songSummary,
@@ -22,6 +23,7 @@ export default function SongDetail({
 }) {
   const { user, profile } = useAuth();
   const isAdmin = Boolean(user && profile?.role === 'admin');
+  const { isFeatureEnabled } = useFeatures();
 
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -188,47 +190,53 @@ export default function SongDetail({
 
         <div className="flex items-center gap-1">
           {/* Favorite Song (Mobile) */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              const targetId = song?.id || songSummary?.id;
-              if (onToggleFavorite && targetId) {
-                onToggleFavorite(targetId);
-              }
-            }}
-            className={`p-2 rounded-xl transition flex items-center gap-1 ${
-              (song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id)
-                ? 'bg-rose-500/20 text-rose-500 border border-rose-500/40 font-bold'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            title={(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart className={`w-4 h-4 ${(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-          </button>
+          {isFeatureEnabled('personal_favorites') && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const targetId = song?.id || songSummary?.id;
+                if (onToggleFavorite && targetId) {
+                  onToggleFavorite(targetId);
+                }
+              }}
+              className={`p-2 rounded-xl transition flex items-center gap-1 ${
+                (song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id)
+                  ? 'bg-rose-500/20 text-rose-500 border border-rose-500/40 font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={`w-4 h-4 ${(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+            </button>
+          )}
 
           {/* Pin Song (Mobile) */}
-          <button
-            onClick={handleTogglePin}
-            className={`p-2 rounded-xl transition flex items-center gap-1 ${
-              pinnedStatus.isPinned
-                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 font-bold'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            title={pinnedStatus.isPinned ? `Pinned #${pinnedStatus.pinNumber}` : "Pin for Today's Service"}
-          >
-            <Pin className={`w-4 h-4 ${pinnedStatus.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
-            {pinnedStatus.isPinned && <span className="text-[11px] font-black">#{pinnedStatus.pinNumber}</span>}
-          </button>
+          {isFeatureEnabled('todays_service') && (
+            <button
+              onClick={handleTogglePin}
+              className={`p-2 rounded-xl transition flex items-center gap-1 ${
+                pinnedStatus.isPinned
+                  ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={pinnedStatus.isPinned ? `Pinned #${pinnedStatus.pinNumber}` : "Pin for Today's Service"}
+            >
+              <Pin className={`w-4 h-4 ${pinnedStatus.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
+              {pinnedStatus.isPinned && <span className="text-[11px] font-black">#{pinnedStatus.pinNumber}</span>}
+            </button>
+          )}
 
-          {/* Presentation Mode */}
-          <button
-            onClick={() => onOpenPresentation(song)}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Presentation Mode"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
+          {/* Presentation Mode (Mobile) */}
+          {isFeatureEnabled('presentation_mode') && (
+            <button
+              onClick={() => onOpenPresentation(song)}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title="Presentation Mode"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Copy Lyrics */}
           <button
@@ -348,49 +356,53 @@ export default function SongDetail({
         {/* Desktop Action icons */}
         <div className="hidden sm:flex items-center gap-2 shrink-0">
           {/* Favorite Song (Desktop) */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              const targetId = song?.id || songSummary?.id;
-              if (onToggleFavorite && targetId) {
-                onToggleFavorite(targetId);
-              }
-            }}
-            className={`p-2 rounded-xl transition flex items-center gap-1.5 ${
-              (song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id)
-                ? 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/40 font-bold shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            title={(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart className={`w-4 h-4 ${(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-            <span className="text-xs font-medium hidden xl:inline">
-              {(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'Favorited' : 'Favorite'}
-            </span>
-          </button>
+          {isFeatureEnabled('personal_favorites') && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const targetId = song?.id || songSummary?.id;
+                if (onToggleFavorite && targetId) {
+                  onToggleFavorite(targetId);
+                }
+              }}
+              className={`p-2 rounded-xl transition flex items-center gap-1.5 ${
+                (song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id)
+                  ? 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/40 font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={`w-4 h-4 ${(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+              <span className="text-xs font-medium hidden xl:inline">
+                {(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'Favorited' : 'Favorite'}
+              </span>
+            </button>
+          )}
 
           {/* Pin Song (Desktop) */}
-          <button
-            onClick={handleTogglePin}
-            className={`p-2 rounded-xl transition flex items-center gap-1.5 ${
-              pinnedStatus.isPinned
-                ? 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/40 font-bold shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            title={
-              pinnedStatus.isPinned
-                ? `Pinned #${pinnedStatus.pinNumber} on Landing Page (Click to edit or unpin)`
-                : (isAdmin ? "Pin song to Landing Page for Today's Service" : "Pinned Song Status")
-            }
-          >
-            <Pin className={`w-4 h-4 ${pinnedStatus.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
-            {pinnedStatus.isPinned ? (
-              <span className="text-xs font-bold">#{pinnedStatus.pinNumber} Pinned</span>
-            ) : (
-              isAdmin && <span className="text-xs font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">Pin</span>
-            )}
-          </button>
+          {isFeatureEnabled('todays_service') && (
+            <button
+              onClick={handleTogglePin}
+              className={`p-2 rounded-xl transition flex items-center gap-1.5 ${
+                pinnedStatus.isPinned
+                  ? 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/40 font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={
+                pinnedStatus.isPinned
+                  ? `Pinned #${pinnedStatus.pinNumber} on Landing Page (Click to edit or unpin)`
+                  : (isAdmin ? "Pin song to Landing Page for Today's Service" : "Pinned Song Status")
+              }
+            >
+              <Pin className={`w-4 h-4 ${pinnedStatus.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
+              {pinnedStatus.isPinned ? (
+                <span className="text-xs font-bold">#{pinnedStatus.pinNumber} Pinned</span>
+              ) : (
+                isAdmin && <span className="text-xs font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">Pin</span>
+              )}
+            </button>
+          )}
 
           {/* Audio / Video Play Button */}
           {videoId && (
@@ -422,14 +434,16 @@ export default function SongDetail({
             </div>
           )}
 
-          {/* Presentation Mode */}
-          <button
-            onClick={() => onOpenPresentation(song)}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Church Presentation / Fullscreen Mode"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
+          {/* Presentation Mode (Desktop) */}
+          {isFeatureEnabled('presentation_mode') && (
+            <button
+              onClick={() => onOpenPresentation(song)}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title="Church Presentation / Fullscreen Mode"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
 
           {/* PPT Download */}
           <button

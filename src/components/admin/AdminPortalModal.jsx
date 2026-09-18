@@ -8,15 +8,21 @@ import {
   Loader2,
   ChevronRight,
   LayoutDashboard,
-  AlertCircle
+  AlertCircle,
+  Compass,
+  Sliders
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AdminSongList from './AdminSongList';
 import AdminSongbookManager from './AdminSongbookManager';
+import AdminProductJourney from './AdminProductJourney';
+import AdminFeatureControl from './AdminFeatureControl';
 
 const TABS = [
   { id: 'catalog', label: 'Song Catalog', icon: Music, description: 'Manage hymns, create new songs, edit metadata' },
-  { id: 'songbooks', label: 'Songbook Manager', icon: BookOpen, description: 'Assign songs to songbook collections' }
+  { id: 'songbooks', label: 'Songbook Manager', icon: BookOpen, description: 'Assign songs to songbook collections' },
+  { id: 'journey', label: 'Product Journey', icon: Compass, description: 'Roadmap, milestones, and development phases' },
+  { id: 'features', label: 'Feature Control', icon: Sliders, description: 'Runtime availability switches and system locks' }
 ];
 
 /**
@@ -324,6 +330,13 @@ export default function AdminPortalModal({ isOpen, onClose }) {
                   </p>
                 </div>
               )
+            )}
+            {activeTab === 'journey' && (
+              <AdminProductJourney />
+            )}
+
+            {activeTab === 'features' && (
+              <AdminFeatureControl />
             )}
           </div>
         </main>

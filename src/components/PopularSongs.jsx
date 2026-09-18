@@ -1,5 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
 import { Flame, ArrowRight, Heart } from 'lucide-react';
+import { useFeatures } from '../context/FeatureContext';
 
 export default function PopularSongs({
   songs = [],
@@ -8,6 +9,7 @@ export default function PopularSongs({
   onToggleFavorite,
   onViewAll
 }) {
+  const { isFeatureEnabled } = useFeatures();
   const popularList = [
     {
       num: '001',
@@ -111,19 +113,21 @@ export default function PopularSongs({
                   {item.num}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onToggleFavorite && songObj) {
-                      onToggleFavorite(songObj.id);
-                    }
-                  }}
-                  className="w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md border border-slate-700/40 flex items-center justify-center text-slate-300 hover:text-rose-400 transition"
-                  title={isFav ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <Heart className={`w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : ''}`} />
-                </button>
+                {isFeatureEnabled('personal_favorites') && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onToggleFavorite && songObj) {
+                        onToggleFavorite(songObj.id);
+                      }
+                    }}
+                    className="w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900/90 backdrop-blur-md border border-slate-700/40 flex items-center justify-center text-slate-300 hover:text-rose-400 transition"
+                    title={isFav ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Heart className={`w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : ''}`} />
+                  </button>
+                )}
               </div>
 
               {/* Bottom Row: Title + Transliteration + View Lyrics button */}

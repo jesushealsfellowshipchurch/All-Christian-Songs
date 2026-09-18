@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe, Music, Lock, Plus, ShieldCheck } from 'lucide-react';
 import { getSongSuggestions } from '../utils/search';
+import { useFeatures } from '../context/FeatureContext';
 
 export default function Header({
   searchQuery,
@@ -22,6 +23,7 @@ export default function Header({
   isAdmin = false,
   onOpenAdmin
 }) {
+  const { isFeatureEnabled } = useFeatures();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -240,18 +242,20 @@ export default function Header({
                   <span>Videos</span>
                 </button>
                 */}
-                <button
-                  onClick={onOpenFavorites}
-                  className="px-2.5 xl:px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
-                >
-                  <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400 shrink-0" />
-                  <span className="hidden xl:inline">Favorites</span>
-                  {favoritesCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      {favoritesCount}
-                    </span>
-                  )}
-                </button>
+                {isFeatureEnabled('personal_favorites') && (
+                  <button
+                    onClick={onOpenFavorites}
+                    className="px-2.5 xl:px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
+                  >
+                    <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400 shrink-0" />
+                    <span className="hidden xl:inline">Favorites</span>
+                    {favoritesCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        {favoritesCount}
+                      </span>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={onOpenAbout}
                   className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
@@ -468,20 +472,22 @@ export default function Header({
               <span>Watch YouTube Videos</span>
             </button>
             */}
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                onOpenFavorites();
-              }}
-              className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800 flex items-center justify-between"
-            >
-              <span className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-rose-400 fill-rose-400" /> Favorites
-              </span>
-              <span className="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full">
-                {favoritesCount}
-              </span>
-            </button>
+            {isFeatureEnabled('personal_favorites') && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenFavorites();
+                }}
+                className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800 flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-rose-400 fill-rose-400" /> Favorites
+                </span>
+                <span className="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full">
+                  {favoritesCount}
+                </span>
+              </button>
+            )}
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false);

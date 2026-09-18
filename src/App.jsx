@@ -19,6 +19,7 @@ import { filterSongs } from './utils/search';
 import { fetchPinnedSongs } from './utils/pinManager';
 import { getCatalogIndex } from './services/catalogRepository';
 import { useAuth } from './context/AuthContext';
+import { useFeatures } from './context/FeatureContext';
 import {
   getLocalFavorites,
   setLocalFavorites,
@@ -51,6 +52,7 @@ export default function App() {
   // Auth state derived securely from Supabase AuthContext
   const { user, profile } = useAuth();
   const isAdmin = Boolean(user && profile?.role === 'admin');
+  const { isFeatureEnabled } = useFeatures();
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminPortalOpen, setIsAdminPortalOpen] = useState(false);
 
@@ -315,12 +317,14 @@ export default function App() {
       />
 
       {/* Pinned / Featured Songs for Today's Service */}
-      <PinnedSongsSection
-        onSelectSong={handleOpenSong}
-        onQuickPlay={(song) => setActiveMedia(song)}
-        isAdmin={isAdmin}
-        allSongs={songs}
-      />
+      {isFeatureEnabled('todays_service') && (
+        <PinnedSongsSection
+          onSelectSong={handleOpenSong}
+          onQuickPlay={(song) => setActiveMedia(song)}
+          isAdmin={isAdmin}
+          allSongs={songs}
+        />
+      )}
 
       {/* YouTube Video Section (Watch With Us) - Currently commented out, can be re-enabled anytime */}
       {/* <YouTubeSection /> */}
@@ -410,11 +414,13 @@ export default function App() {
       />
 
       {/* Church Projector Presentation Fullscreen Mode */}
-      <PresentationModal
-        song={presentationSong}
-        isOpen={!!presentationSong}
-        onClose={() => setPresentationSong(null)}
-      />
+      {isFeatureEnabled('presentation_mode') && (
+        <PresentationModal
+          song={presentationSong}
+          isOpen={!!presentationSong}
+          onClose={() => setPresentationSong(null)}
+        />
+      )}
 
       {/* About Modal */}
       <AboutModal
@@ -423,14 +429,16 @@ export default function App() {
       />
 
       {/* Favorites Modal */}
-      <FavoritesModal
-        isOpen={isFavoritesOpen}
-        onClose={() => setIsFavoritesOpen(false)}
-        favorites={favorites}
-        allSongs={songs}
-        onSelectSong={handleOpenSong}
-        onRemoveFavorite={toggleFavorite}
-      />
+      {isFeatureEnabled('personal_favorites') && (
+        <FavoritesModal
+          isOpen={isFavoritesOpen}
+          onClose={() => setIsFavoritesOpen(false)}
+          favorites={favorites}
+          allSongs={songs}
+          onSelectSong={handleOpenSong}
+          onRemoveFavorite={toggleFavorite}
+        />
+      )}
 
       {/* Admin Login Modal */}
       <AdminLoginModal
