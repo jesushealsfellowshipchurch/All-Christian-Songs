@@ -8,7 +8,9 @@ const AuthContext = createContext({
   loading: true,
   error: null,
   signIn: async () => ({ success: false, error: 'Not initialized' }),
+  signUp: async () => ({ success: false, error: 'Not initialized' }),
   signOut: async () => ({ success: false, error: 'Not initialized' }),
+  resetPassword: async () => ({ success: false, error: 'Not initialized' }),
   clearError: () => {}
 });
 
@@ -29,7 +31,22 @@ export function formatAuthError(error) {
     return 'Invalid email or password. Please check your credentials and try again.';
   }
   if (lower.includes('email not confirmed')) {
-    return 'Your email address has not been confirmed. Please check your inbox.';
+    return 'Your email address has not been confirmed. Please check your inbox for the confirmation link.';
+  }
+  if (
+    lower.includes('user already registered') ||
+    lower.includes('already registered') ||
+    lower.includes('email address is already registered') ||
+    lower.includes('unique constraint')
+  ) {
+    return 'An account with this email address already exists. Please sign in instead.';
+  }
+  if (
+    lower.includes('password should be at least') ||
+    lower.includes('weak_password') ||
+    lower.includes('password is too short')
+  ) {
+    return 'Password must be at least 6 characters long.';
   }
   if (lower.includes('user not found')) {
     return 'No account was found with this email address.';
@@ -43,10 +60,13 @@ export function formatAuthError(error) {
     return 'Unable to connect to authentication service. Please check your internet connection.';
   }
   if (lower.includes('rate limit') || lower.includes('too many requests')) {
-    return 'Too many login attempts. Please wait a moment before trying again.';
+    return 'Too many attempts. Please wait a moment before trying again.';
   }
   if (lower.includes('session expired') || lower.includes('jwt expired')) {
     return 'Your session has expired. Please sign in again.';
+  }
+  if (lower.includes('signup disabled') || lower.includes('signups not allowed')) {
+    return 'User registration is currently disabled.';
   }
   return msg || 'Authentication failed. Please try again.';
 }
@@ -181,6 +201,111 @@ export function AuthProvider({ children }) {
     [loadProfile]
   );
 
+  // Secure sign up using Supabase email/password auth
+  const signUp = useCallback(
+    async ({ email, password, firstName, lastName }) => {
+      setError(null);
+
+      if (!email || !email.trim() || !password) {
+        const errStr = 'Please provide both email and password.';
+        setError(errStr);
+        return { success: false, error: errStr };
+      }
+
+      if (!supabase) {
+        const errStr = 'Authentication service is not configured.';
+        setError(errStr);
+        return { success: false, error: errStr };
+      }
+
+      try {
+        const cleanEmail = email.trim().toLowerCase();
+        const trimmedFirst = firstName ? firstName.trim() : '';
+        const trimmedLast = lastName ? lastName.trim() : '';
+        const fullName = `${trimmedFirst} ${trimmedLast}`.trim();
+
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              first_name: trimmedFirst,
+              last_name: trimmedLast,
+              full_name: fullName
+            }
+          }
+        });
+
+        if (authError) {
+          const formatted = formatAuthError(authError);
+          setError(formatted);
+          return { success: false, error: formatted };
+        }
+
+        // Establish session if returned immediately
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.user);
+          if (data.user?.id) {
+            await loadProfile(data.user.id);
+          }
+        }
+
+        // Check if email confirmation is required by Supabase
+        const requiresConfirmation = !data.session && Boolean(data.user);
+
+        setError(null);
+        return {
+          success: true,
+          user: data.user,
+          session: data.session,
+          requiresConfirmation
+        };
+      } catch (err) {
+        const formatted = formatAuthError(err);
+        setError(formatted);
+        return { success: false, error: formatted };
+      }
+    },
+    [loadProfile]
+  );
+
+  // Secure password reset request via Supabase Auth
+  const resetPassword = useCallback(async ({ email }) => {
+    setError(null);
+
+    if (!email || !email.trim()) {
+      const errStr = 'Please enter your email address.';
+      setError(errStr);
+      return { success: false, error: errStr };
+    }
+
+    if (!supabase) {
+      const errStr = 'Authentication service is not configured.';
+      setError(errStr);
+      return { success: false, error: errStr };
+    }
+
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined
+      });
+
+      if (resetErr) {
+        const formatted = formatAuthError(resetErr);
+        setError(formatted);
+        return { success: false, error: formatted };
+      }
+
+      setError(null);
+      return { success: true };
+    } catch (err) {
+      const formatted = formatAuthError(err);
+      setError(formatted);
+      return { success: false, error: formatted };
+    }
+  }, []);
+
   // Secure sign out
   const signOut = useCallback(async () => {
     setError(null);
@@ -219,7 +344,9 @@ export function AuthProvider({ children }) {
     loading,
     error,
     signIn,
+    signUp,
     signOut,
+    resetPassword,
     clearError
   };
 

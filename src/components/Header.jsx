@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe, Music, Lock, Plus, ShieldCheck } from 'lucide-react';
+import { Search, X, Moon, Sun, Heart, Menu, ArrowLeft, ArrowRight, Guitar, Video, BookOpen, Globe, Music, Lock, Plus, ShieldCheck, Church, LogIn, LogOut, User, UserPlus, ChevronDown } from 'lucide-react';
 import { getSongSuggestions } from '../utils/search';
 import { useFeatures } from '../context/FeatureContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header({
   searchQuery,
@@ -21,16 +22,28 @@ export default function Header({
   onOpenFavorites,
   onOpenAbout,
   isAdmin = false,
-  onOpenAdmin
+  onOpenAdmin,
+  onOpenMyChurches,
+  onChurchNavClick,
+  churchNavLabel,
+  myChurchesCount = 0,
+  onOpenAuth
 }) {
   const { isFeatureEnabled } = useFeatures();
+  const { user, profile, signOut } = useAuth();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const handleChurchClick = onChurchNavClick || onOpenMyChurches;
+  const effectiveChurchLabel = churchNavLabel || (myChurchesCount === 0 ? 'Join a Church' : myChurchesCount === 1 ? 'My Church' : 'My Churches');
+
   const searchInputRef = useRef(null);
   const desktopSearchInputRef = useRef(null);
   const searchContainerRef = useRef(null);
   const desktopSearchContainerRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   // Auto focus input when mobile search opens
   useEffect(() => {
@@ -39,7 +52,7 @@ export default function Header({
     }
   }, [isMobileSearchOpen]);
 
-  // Close dropdown on click outside
+  // Close search suggestions dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -50,10 +63,36 @@ export default function Header({
       ) {
         setIsDropdownOpen(false);
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setIsUserMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Compute clean user display name and initials
+  const displayName = useMemo(() => {
+    if (profile?.full_name?.trim()) {
+      return profile.full_name.trim().split(/\s+/)[0];
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'Member';
+  }, [profile?.full_name, user?.email]);
+
+  const userInitials = useMemo(() => {
+    if (profile?.full_name?.trim()) {
+      const parts = profile.full_name.trim().split(/\s+/);
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return 'U';
+  }, [profile?.full_name, user?.email]);
 
   // Compute live accurate suggestions
   const suggestions = useMemo(() => {
@@ -256,33 +295,37 @@ export default function Header({
                     )}
                   </button>
                 )}
+                {Boolean(user && isFeatureEnabled('church_workspaces')) && (
+                  <button
+                    onClick={handleChurchClick}
+                    className="px-2.5 xl:px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5"
+                    title={effectiveChurchLabel}
+                  >
+                    <Church className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="whitespace-nowrap">{effectiveChurchLabel}</span>
+                    {myChurchesCount > 1 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {myChurchesCount}
+                      </span>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={onOpenAbout}
                   className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   About
                 </button>
-                <button
-                  onClick={onOpenAdmin}
-                  className={`px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
-                    isAdmin 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' 
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                  title={isAdmin ? "Admin Portal (Signed In)" : "Admin Portal (Sign In)"}
-                >
-                  {isAdmin ? (
-                    <>
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Admin</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Admin</span>
-                    </>
-                  )}
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={onOpenAdmin}
+                    className="px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                    title="Admin Portal"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Admin</span>
+                  </button>
+                )}
               </nav>
 
               {/* Desktop Search Input with Suggestions Dropdown */}
@@ -425,6 +468,143 @@ export default function Header({
                   </button>
                 </div>
 
+                {/* User Account / Sign In Control */}
+                {user ? (
+                  <div className="relative" ref={userMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700/80 hover:border-amber-400/50 text-slate-200 hover:text-white transition text-xs font-medium shadow-sm"
+                      title="User Account Menu"
+                      aria-expanded={isUserMenuOpen}
+                    >
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 flex items-center justify-center font-bold text-[10px] shadow-sm shrink-0">
+                        {userInitials}
+                      </div>
+                      <span className="hidden md:inline max-w-[80px] truncate text-[11px] font-semibold text-slate-200">
+                        {displayName}
+                      </span>
+                      <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-slate-900/95 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-xl py-1 text-xs divide-y divide-slate-800 animate-fadeIn">
+                        <div className="px-3.5 py-2.5 bg-slate-800/40">
+                          <p className="font-bold text-white text-xs truncate">
+                            {profile?.full_name || 'Member'}
+                          </p>
+                          <p className="text-[10px] text-slate-400 truncate mt-0.5 font-mono">
+                            {user.email}
+                          </p>
+                          <div className="mt-1.5">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider ${
+                              profile?.role === 'admin'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            }`}>
+                              {profile?.role === 'admin' ? 'Super Admin' : 'Member'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="py-1">
+                          {isFeatureEnabled('personal_favorites') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                onOpenFavorites();
+                              }}
+                              className="w-full px-3.5 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
+                                <span>My Favorites</span>
+                              </span>
+                              {favoritesCount > 0 && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/20 text-rose-300">
+                                  {favoritesCount}
+                                </span>
+                              )}
+                            </button>
+                          )}
+
+                          {isFeatureEnabled('church_workspaces') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                if (handleChurchClick) handleChurchClick();
+                              }}
+                              className="w-full px-3.5 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Church className="w-3.5 h-3.5 text-amber-400" />
+                                <span>{effectiveChurchLabel}</span>
+                              </span>
+                              {myChurchesCount > 1 && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 font-bold">
+                                  {myChurchesCount}
+                                </span>
+                              )}
+                            </button>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                onOpenAdmin();
+                              }}
+                              className="w-full px-3.5 py-2 text-left text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 transition flex items-center gap-2"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Admin Portal</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="py-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              signOut();
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 transition flex items-center gap-2"
+                          >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onOpenAuth && onOpenAuth('login')}
+                      className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700/80 transition flex items-center gap-1.5 shadow-sm"
+                      title="Sign In"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Sign In</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onOpenAuth && onOpenAuth('signup')}
+                      className="hidden sm:inline-flex items-center gap-1 px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 transition shadow-sm"
+                      title="Sign Up"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Sign Up</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Mobile Menu Hamburger */}
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -442,6 +622,63 @@ export default function Header({
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && !isMobileSearchOpen && (
           <div className="lg:hidden py-3 border-t border-slate-800 flex flex-col gap-2">
+            {/* User / Guest Status Card */}
+            {user ? (
+              <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-xl mb-1 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                    {userInitials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">
+                      {profile?.full_name || 'Member'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate font-mono">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    signOut();
+                  }}
+                  className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition shrink-0"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-xl mb-1 flex flex-col gap-2">
+                <p className="text-[11px] text-slate-300 font-medium">Sign in to save favorites and access church workspaces</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (onOpenAuth) onOpenAuth('login');
+                    }}
+                    className="w-full py-2 px-3 rounded-lg text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 flex items-center justify-center gap-1.5 transition shadow-sm"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (onOpenAuth) onOpenAuth('signup');
+                    }}
+                    className="w-full py-2 px-3 rounded-lg text-xs font-semibold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 flex items-center justify-center gap-1.5 transition"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Sign Up</span>
+                  </button>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false);
@@ -488,6 +725,25 @@ export default function Header({
                 </span>
               </button>
             )}
+            {Boolean(user && isFeatureEnabled('church_workspaces')) && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  if (handleChurchClick) handleChurchClick();
+                }}
+                className="px-3 py-2 rounded-lg text-sm text-left font-medium text-slate-200 hover:bg-slate-800 flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <Church className="w-4 h-4 text-amber-400" />
+                  <span>{effectiveChurchLabel}</span>
+                </span>
+                {myChurchesCount > 1 && (
+                  <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                    {myChurchesCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false);
@@ -497,23 +753,23 @@ export default function Header({
             >
               About & Fellowship
             </button>
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                onOpenAdmin();
-              }}
-              className={`px-3 py-2 rounded-lg text-sm text-left font-medium flex items-center justify-between transition ${
-                isAdmin ? 'text-amber-300 bg-amber-500/15' : 'text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                {isAdmin ? <ShieldCheck className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
-                <span>Admin Portal</span>
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                {isAdmin ? 'Signed In' : 'Sign In'}
-              </span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenAdmin();
+                }}
+                className="px-3 py-2 rounded-lg text-sm text-left font-medium flex items-center justify-between transition text-amber-300 bg-amber-500/15"
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <span>Admin Portal</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                  Signed In
+                </span>
+              </button>
+            )}
           </div>
         )}
 

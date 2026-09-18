@@ -169,49 +169,89 @@ export default function AdminLoginModal({ isOpen, onClose, onOpenPortal }) {
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-              Your administrator session is active. Open the Admin Portal to manage the hymnal catalog, create songs, and organize songbooks.
-            </p>
+            {profile?.role === 'admin' ? (
+              <>
+                <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+                  Your administrator session is active. Open the Admin Portal to manage the hymnal catalog, create songs, and organize songbooks.
+                </p>
 
-            <div className="flex flex-col gap-3">
-              {/* Primary CTA: Open Admin Portal */}
-              {onOpenPortal && (
-                <button
-                  type="button"
-                  onClick={onOpenPortal}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-md hover:shadow-amber-500/25 flex items-center justify-center gap-2"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Open Admin Portal</span>
-                </button>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  disabled={submitting}
-                  className="flex-1 py-2.5 px-4 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-medium rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </>
+                <div className="flex flex-col gap-3">
+                  {onOpenPortal && (
+                    <button
+                      type="button"
+                      onClick={onOpenPortal}
+                      className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-md hover:shadow-amber-500/25 flex items-center justify-center gap-2"
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Open Admin Portal</span>
+                    </button>
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={submitting}
-                  className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      disabled={submitting}
+                      className="flex-1 py-2.5 px-4 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-medium rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={submitting}
+                      className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl mb-5 text-xs text-amber-300/90 leading-relaxed flex items-start gap-2.5">
+                  <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <span>
+                    You are signed in as a standard member. Administrative features require an authorized Super Admin account.
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      disabled={submitting}
+                      className="flex-1 py-2.5 px-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out & Switch</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={submitting}
+                      className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition-colors"
+                    >
+                      Return to Hymnal
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           /* =======================================================

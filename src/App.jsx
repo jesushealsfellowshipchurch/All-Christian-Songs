@@ -12,14 +12,18 @@ import SongbooksModal from './components/SongbooksModal';
 import PresentationModal from './components/PresentationModal';
 import AboutModal from './components/AboutModal';
 import FavoritesModal from './components/FavoritesModal';
+import UserAuthModal from './components/UserAuthModal';
 import AdminLoginModal from './components/AdminLoginModal';
 import AdminPortalModal from './components/admin/AdminPortalModal';
+import ChurchWorkspaceModal from './components/church/ChurchWorkspaceModal';
+import MyChurchesModal from './components/church/MyChurchesModal';
 import PinnedSongsSection from './components/PinnedSongsSection';
 import { filterSongs } from './utils/search';
 import { fetchPinnedSongs } from './utils/pinManager';
 import { getCatalogIndex } from './services/catalogRepository';
 import { useAuth } from './context/AuthContext';
 import { useFeatures } from './context/FeatureContext';
+import { useChurch } from './context/ChurchContext';
 import {
   getLocalFavorites,
   setLocalFavorites,
@@ -53,8 +57,45 @@ export default function App() {
   const { user, profile } = useAuth();
   const isAdmin = Boolean(user && profile?.role === 'admin');
   const { isFeatureEnabled } = useFeatures();
+  const { myChurches, activeChurches, churchNavLabel, selectChurch } = useChurch();
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminPortalOpen, setIsAdminPortalOpen] = useState(false);
+  const [isMyChurchesOpen, setIsMyChurchesOpen] = useState(false);
+  const [myChurchesModalTab, setMyChurchesModalTab] = useState('list');
+  const [isChurchWorkspaceOpen, setIsChurchWorkspaceOpen] = useState(false);
+  const [isUserAuthOpen, setIsUserAuthOpen] = useState(false);
+  const [userAuthMode, setUserAuthMode] = useState('login');
+
+  const handleOpenUserAuth = (mode = 'login') => {
+    setUserAuthMode(mode);
+    setIsUserAuthOpen(true);
+  };
+
+  const handleChurchNavClick = () => {
+    if (!user) {
+      handleOpenUserAuth('login');
+      return;
+    }
+
+    const churchList = activeChurches && activeChurches.length >= 0 ? activeChurches : (myChurches || []);
+
+    if (churchList.length === 0) {
+      // 1. User belongs to ZERO churches:
+      // Show "Join a Church" -> clicking opens join modal directly
+      setMyChurchesModalTab('join');
+      setIsMyChurchesOpen(true);
+    } else if (churchList.length === 1) {
+      // 2. User belongs to EXACTLY ONE church:
+      // Show "My Church" -> clicking opens that church workspace directly without church-selection screen!
+      selectChurch(churchList[0].id);
+      setIsChurchWorkspaceOpen(true);
+    } else {
+      // 3. User belongs to MORE THAN ONE church:
+      // Show "My Churches" -> clicking opens church selector list
+      setMyChurchesModalTab('list');
+      setIsMyChurchesOpen(true);
+    }
+  };
 
   // Favorites: Cloud-synced for authenticated users, localStorage for guests
   const [favorites, setFavorites] = useState(() => getLocalFavorites());
@@ -283,6 +324,11 @@ export default function App() {
         onOpenAbout={() => setIsAboutOpen(true)}
         isAdmin={isAdmin}
         onOpenAdmin={handleOpenAdmin}
+        onOpenMyChurches={handleChurchNavClick}
+        onChurchNavClick={handleChurchNavClick}
+        churchNavLabel={churchNavLabel}
+        myChurchesCount={(activeChurches && activeChurches.length >= 0 ? activeChurches : (myChurches || [])).length}
+        onOpenAuth={handleOpenUserAuth}
       />
 
       {/* Hero Section with Empty Tomb, Centered Telugu Title & Calligraphy, and Central Search with suggestions */}
@@ -440,6 +486,17 @@ export default function App() {
         />
       )}
 
+      {/* User Authentication Modal (Sign In / Sign Up / Forgot Password) */}
+      <UserAuthModal
+        isOpen={isUserAuthOpen}
+        initialMode={userAuthMode}
+        onClose={() => setIsUserAuthOpen(false)}
+        onOpenAdmin={() => {
+          setIsUserAuthOpen(false);
+          handleOpenAdmin();
+        }}
+      />
+
       {/* Admin Login Modal */}
       <AdminLoginModal
         isOpen={isAdminLoginOpen}
@@ -455,6 +512,32 @@ export default function App() {
         isOpen={isAdminPortalOpen}
         onClose={() => setIsAdminPortalOpen(false)}
       />
+
+      {/* My Churches Modal */}
+      {isFeatureEnabled('church_workspaces') && (
+        <MyChurchesModal
+          isOpen={isMyChurchesOpen}
+          initialTab={myChurchesModalTab}
+          onClose={() => setIsMyChurchesOpen(false)}
+          onOpenWorkspace={() => {
+            setIsMyChurchesOpen(false);
+            setIsChurchWorkspaceOpen(true);
+          }}
+        />
+      )}
+
+      {/* Church Workspace Modal */}
+      {isFeatureEnabled('church_workspaces') && (
+        <ChurchWorkspaceModal
+          isOpen={isChurchWorkspaceOpen}
+          onClose={() => setIsChurchWorkspaceOpen(false)}
+          onOpenMyChurches={() => {
+            setIsChurchWorkspaceOpen(false);
+            setMyChurchesModalTab('list');
+            setIsMyChurchesOpen(true);
+          }}
+        />
+      )}
 
     </div>
   );
