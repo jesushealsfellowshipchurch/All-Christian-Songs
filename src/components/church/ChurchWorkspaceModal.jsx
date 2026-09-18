@@ -16,8 +16,10 @@ import {
   Globe,
   MapPin,
   ExternalLink,
-  LogOut
+  LogOut,
+  Music
 } from 'lucide-react';
+import ChurchWorshipTab from './ChurchWorshipTab';
 import { useChurch } from '../../context/ChurchContext';
 import { useFeatures } from '../../context/FeatureContext';
 import {
@@ -27,7 +29,7 @@ import {
   removeMember
 } from '../../services/churchService';
 
-export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches }) {
+export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches, onSelectSong }) {
   const {
     activeChurch,
     activeChurches,
@@ -260,6 +262,19 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
             Overview
           </button>
 
+          {/* Worship Tab: Repertoire & Song Collections */}
+          <button
+            onClick={() => setActiveTab('worship')}
+            className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'worship'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Music className="w-4 h-4" />
+            <span>Worship</span>
+          </button>
+
           {/* Roster tab: Available to Pastor and Worship Leader */}
           {(isPastor || isWorshipLeader) && (
             <button
@@ -381,6 +396,22 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB: WORSHIP REPERTOIRE & COLLECTIONS */}
+          {activeTab === 'worship' && (
+            <ChurchWorshipTab
+              activeChurch={activeChurch}
+              isPastor={isPastor}
+              isWorshipLeader={isWorshipLeader}
+              isMember={isMember}
+              isWorshipActive={isChurchFeatureActive('church_worship_collections')}
+              onSelectSong={(song) => {
+                onClose();
+                if (onSelectSong) onSelectSong(song);
+              }}
+              onNavigateToFeatures={() => setActiveTab('features')}
+            />
           )}
 
           {/* TAB 2: ROSTER & APPROVALS (Pastor & Worship Leader) */}
@@ -601,6 +632,30 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
                     }`}
                   >
                     {isChurchFeatureActive('worship_team_roles') ? 'Enabled' : 'Disabled'}
+                  </button>
+                </div>
+
+                {/* Feature 2: Church Worship Collections */}
+                <div className="p-4 flex items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Worship Repertoire & Song Collections</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Enable congregational song collections, custom worship key/tempo arrangements, and repertoire curation.
+                    </p>
+                    <span className="inline-block mt-1 text-[10px] font-semibold text-emerald-400">
+                      Platform Status: {isFeatureEnabled('church_worship_collections') ? 'Available' : 'Disabled by Platform'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleFeature('church_worship_collections', isChurchFeatureActive('church_worship_collections'))}
+                    disabled={isSubmitting || !isFeatureEnabled('church_worship_collections')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                      isChurchFeatureActive('church_worship_collections')
+                        ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                        : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {isChurchFeatureActive('church_worship_collections') ? 'Enabled' : 'Disabled'}
                   </button>
                 </div>
               </div>

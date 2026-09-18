@@ -536,6 +536,7 @@ export default function App() {
             setMyChurchesModalTab('list');
             setIsMyChurchesOpen(true);
           }}
+          onSelectSong={handleOpenSong}
         />
       )}
 
