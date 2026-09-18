@@ -19,6 +19,14 @@ import { filterSongs } from './utils/search';
 import { fetchPinnedSongs } from './utils/pinManager';
 import { getCatalogIndex } from './services/catalogRepository';
 import { useAuth } from './context/AuthContext';
+import {
+  getLocalFavorites,
+  setLocalFavorites,
+  fetchUserFavorites,
+  addUserFavorite,
+  removeUserFavorite,
+  syncLocalFavoritesToCloud
+} from './services/favoritesService';
 
 export default function App() {
   const [songs, setSongs] = useState([]);
@@ -32,16 +40,6 @@ export default function App() {
   const [category, setCategory] = useState(null);
   const [activeSongbook, setActiveSongbook] = useState(null);
   
-  // Favorites stored in localStorage
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('jhf_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch (_) {
-      return [];
-    }
-  });
-
   // Active modal / detail states
   const [selectedSong, setSelectedSong] = useState(null);
   const [activeMedia, setActiveMedia] = useState(null);
@@ -55,7 +53,87 @@ export default function App() {
   const isAdmin = Boolean(user && profile?.role === 'admin');
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminPortalOpen, setIsAdminPortalOpen] = useState(false);
-  
+
+  // Favorites: Cloud-synced for authenticated users, localStorage for guests
+  const [favorites, setFavorites] = useState(() => getLocalFavorites());
+
+  // Synchronize favorites on auth state transitions (login, logout, restoration)
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function syncFavorites() {
+      if (user?.id) {
+        // 1. Authenticated user: load cloud favorites
+        const cloudResult = await fetchUserFavorites(user.id);
+        if (isCancelled) return;
+
+        let activeIds = cloudResult.success ? cloudResult.data : [];
+
+        // 2. Safely detect and migrate any existing local guest favorites
+        const local = getLocalFavorites();
+        if (local.length > 0) {
+          const catalogIds = songs && songs.length > 0 ? new Set(songs.map(s => s.id)) : null;
+          const syncResult = await syncLocalFavoritesToCloud(user.id, local, catalogIds);
+          if (syncResult.success && syncResult.migratedCount > 0) {
+            activeIds = Array.from(new Set([...activeIds, ...local]));
+          }
+        }
+
+        if (!isCancelled) {
+          setFavorites(activeIds);
+        }
+      } else {
+        // Guest user: load from localStorage
+        const local = getLocalFavorites();
+        if (!isCancelled) {
+          setFavorites(local);
+        }
+      }
+    }
+
+    syncFavorites();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id, songs?.length]);
+
+  // Persist favorites to localStorage ONLY in guest mode (unauthenticated)
+  useEffect(() => {
+    if (!user) {
+      setLocalFavorites(favorites);
+    }
+  }, [favorites, user]);
+
+  const toggleFavorite = async (songId) => {
+    if (!songId) return;
+    const isFav = favorites.includes(songId);
+
+    // Optimistic UI update immediately
+    const nextFavorites = isFav
+      ? favorites.filter((id) => id !== songId)
+      : [...favorites, songId];
+    setFavorites(nextFavorites);
+
+    if (user?.id) {
+      if (isFav) {
+        const { success } = await removeUserFavorite(user.id, songId);
+        if (!success) {
+          // Revert optimistic update on cloud failure
+          setFavorites(favorites);
+          console.warn('[Favorites] Failed to remove favorite in cloud');
+        }
+      } else {
+        const { success } = await addUserFavorite(user.id, songId);
+        if (!success) {
+          // Revert optimistic update on cloud failure
+          setFavorites(favorites);
+          console.warn('[Favorites] Failed to add favorite in cloud');
+        }
+      }
+    }
+  };
+
   // Dark mode (default to true for rich stage aesthetic, can toggle)
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('theme') !== 'light';
@@ -71,19 +149,6 @@ export default function App() {
       localStorage.setItem('theme', 'light');
     }
   }, [darkMode]);
-
-  // Persist favorites to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('jhf_favorites', JSON.stringify(favorites));
-    } catch (_) {}
-  }, [favorites]);
-
-  const toggleFavorite = (songId) => {
-    setFavorites((prev) =>
-      prev.includes(songId) ? prev.filter((id) => id !== songId) : [...prev, songId]
-    );
-  };
 
   // Load compact index and pinned songs once on boot
   useEffect(() => {
@@ -306,6 +371,8 @@ export default function App() {
                   onPlayMedia={(song) => setActiveMedia(song)}
                   activePlayingId={activeMedia?.id}
                   onOpenPresentation={(song) => setPresentationSong(song)}
+                  favorites={favorites}
+                  onToggleFavorite={toggleFavorite}
                 />
               </div>
             )}

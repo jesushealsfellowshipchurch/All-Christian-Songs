@@ -16,7 +16,9 @@ export default function SongDetail({
   onClose,
   onPlayMedia,
   activePlayingId,
-  onOpenPresentation
+  onOpenPresentation,
+  favorites = [],
+  onToggleFavorite
 }) {
   const { user, profile } = useAuth();
   const isAdmin = Boolean(user && profile?.role === 'admin');
@@ -185,6 +187,26 @@ export default function SongDetail({
         </button>
 
         <div className="flex items-center gap-1">
+          {/* Favorite Song (Mobile) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              const targetId = song?.id || songSummary?.id;
+              if (onToggleFavorite && targetId) {
+                onToggleFavorite(targetId);
+              }
+            }}
+            className={`p-2 rounded-xl transition flex items-center gap-1 ${
+              (song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id)
+                ? 'bg-rose-500/20 text-rose-500 border border-rose-500/40 font-bold'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title={(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart className={`w-4 h-4 ${(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+          </button>
+
           {/* Pin Song (Mobile) */}
           <button
             onClick={handleTogglePin}
@@ -325,6 +347,29 @@ export default function SongDetail({
 
         {/* Desktop Action icons */}
         <div className="hidden sm:flex items-center gap-2 shrink-0">
+          {/* Favorite Song (Desktop) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              const targetId = song?.id || songSummary?.id;
+              if (onToggleFavorite && targetId) {
+                onToggleFavorite(targetId);
+              }
+            }}
+            className={`p-2 rounded-xl transition flex items-center gap-1.5 ${
+              (song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id)
+                ? 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/40 font-bold shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title={(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart className={`w-4 h-4 ${(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+            <span className="text-xs font-medium hidden xl:inline">
+              {(song?.id || songSummary?.id) && favorites.includes(song?.id || songSummary?.id) ? 'Favorited' : 'Favorite'}
+            </span>
+          </button>
+
           {/* Pin Song (Desktop) */}
           <button
             onClick={handleTogglePin}
