@@ -9,15 +9,18 @@ import { transposeChordSheet, isChordLine } from '../utils/chordTransposer';
 import generateSongPptx from '../utils/pptGenerator';
 import { isSongPinned, pinSong, unpinSong } from '../utils/pinManager';
 import { getSong } from '../services/songRepository';
+import { useAuth } from '../context/AuthContext';
 
 export default function SongDetail({
   songSummary,
   onClose,
   onPlayMedia,
   activePlayingId,
-  onOpenPresentation,
-  isAdmin: propIsAdmin = false
+  onOpenPresentation
 }) {
+  const { user, profile } = useAuth();
+  const isAdmin = Boolean(user && profile?.role === 'admin');
+
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('lyrics'); // 'lyrics' | 'chords'
@@ -31,7 +34,6 @@ export default function SongDetail({
   const [pinnedStatus, setPinnedStatus] = useState({ isPinned: false, pinNumber: null });
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pinNumberInput, setPinNumberInput] = useState('');
-  const [isAdmin, setIsAdmin] = useState(() => propIsAdmin);
   const [pinActionError, setPinActionError] = useState('');
 
   const videoId = song?.youtube_id || songSummary?.yt;
@@ -63,10 +65,9 @@ export default function SongDetail({
       });
   }, [songSummary?.id, songSummary?.slug]);
 
-  // Sync admin state and pin status
+  // Sync pin status
   useEffect(() => {
     const updatePinInfo = () => {
-      setIsAdmin(propIsAdmin);
       const targetId = song?.id || songSummary?.id;
       const targetSlug = song?.slug || songSummary?.slug;
       setPinnedStatus(isSongPinned(targetId, targetSlug));
@@ -79,7 +80,7 @@ export default function SongDetail({
       window.removeEventListener('jhf_pinned_songs_changed', updatePinInfo);
       window.removeEventListener('storage', updatePinInfo);
     };
-  }, [song?.id, songSummary?.id, propIsAdmin]);
+  }, [song?.id, songSummary?.id]);
 
   const handleTogglePin = () => {
     setPinActionError('');

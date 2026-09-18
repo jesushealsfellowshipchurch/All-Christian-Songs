@@ -306,7 +306,6 @@ export default function App() {
                   onPlayMedia={(song) => setActiveMedia(song)}
                   activePlayingId={activeMedia?.id}
                   onOpenPresentation={(song) => setPresentationSong(song)}
-                  isAdmin={isAdmin}
                 />
               </div>
             )}

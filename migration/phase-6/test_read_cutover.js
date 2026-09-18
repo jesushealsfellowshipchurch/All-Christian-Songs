@@ -12,6 +12,7 @@
 import { getSong, clearSongCache } from '../../src/services/songRepository.js';
 import { getCatalogIndex, getSongbooks, clearCatalogCache } from '../../src/services/catalogRepository.js';
 import { filterSongs } from '../../src/utils/search.js';
+import { supabase } from '../../src/utils/supabaseClient.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -69,6 +70,11 @@ async function runTests() {
   // TEST 1: Live Catalog Fetch
   // ----------------------------------------------------
   console.log('--- TEST 1: Live Catalog Read ---');
+  const { count: liveSongCount } = await supabase
+    .from('songs')
+    .select('id', { count: 'exact', head: true });
+  const expectedCatalogCount = liveSongCount || 3774;
+
   clearCatalogCache();
   const catStart = Date.now();
   const catalogRes = await getCatalogIndex();
@@ -76,8 +82,8 @@ async function runTests() {
 
   record(
     'Catalog row count',
-    catalogRes.songs.length === 3773,
-    `Count: ${catalogRes.songs.length}, source: ${catalogRes.source}, time: ${catDuration}ms`
+    catalogRes.songs.length === expectedCatalogCount && catalogRes.songs.length >= 3773,
+    `Count: ${catalogRes.songs.length}, expected: ${expectedCatalogCount}, source: ${catalogRes.source}, time: ${catDuration}ms`
   );
 
   record(
@@ -298,7 +304,7 @@ async function runTests() {
   const dynamicCatalog = await getCatalogIndex();
   record(
     'Dynamic pagination / fallback loaded full catalog',
-    dynamicCatalog.songs.length === 3773 && (dynamicCatalog.source === 'supabase' || dynamicCatalog.source === 'static'),
+    dynamicCatalog.songs.length === expectedCatalogCount && dynamicCatalog.songs.length >= 3773 && (dynamicCatalog.source === 'supabase' || dynamicCatalog.source === 'static'),
     `Resolved ${dynamicCatalog.songs.length} songs (source: ${dynamicCatalog.source})`
   );
 

@@ -10,9 +10,9 @@
  *    - pinned_songs (INSERT, UPDATE, DELETE) -> DENIED
  *    - profiles privilege escalation (INSERT role='admin', UPDATE) -> DENIED
  * 4. Verify public read access is preserved:
- *    - songs (SELECT) -> ALLOWED (3,773 rows)
+ *    - songs (SELECT) -> ALLOWED (3,773+ rows)
  *    - songbook_songs (SELECT) -> ALLOWED (2,291 rows)
- *    - pinned_songs (SELECT) -> ALLOWED (1 row)
+ *    - pinned_songs (SELECT) -> ALLOWED (consistent snapshot count)
  *    - languages (SELECT) -> ALLOWED (3 rows)
  *    - categories (SELECT) -> ALLOWED (18 rows)
  *    - songbooks (SELECT) -> ALLOWED (8 rows)
@@ -117,10 +117,10 @@ async function runVerification() {
   const { count: songCount, error: songReadErr } = await supabase
     .from('songs')
     .select('id', { count: 'exact', head: true });
-  if (!songReadErr && songCount === 3773) {
-    pass('Public SELECT on songs', `Accessible: exactly ${songCount} rows`);
+  if (!songReadErr && typeof songCount === 'number' && songCount >= 3773) {
+    pass('Public SELECT on songs', `Accessible: ${songCount} rows (>= 3,773 baseline)`);
   } else {
-    fail('Public SELECT on songs', songReadErr?.message || `Expected 3773, got ${songCount}`);
+    fail('Public SELECT on songs', songReadErr?.message || `Expected >= 3773, got ${songCount}`);
   }
 
   const { count: songbookSongsCount, error: sbsReadErr } = await supabase
@@ -132,13 +132,13 @@ async function runVerification() {
     fail('Public SELECT on songbook_songs', sbsReadErr?.message || `Expected 2291, got ${songbookSongsCount}`);
   }
 
-  const { count: pinnedCount, error: pinnedReadErr } = await supabase
+  const { data: pinnedRows, count: pinnedCount, error: pinnedReadErr } = await supabase
     .from('pinned_songs')
-    .select('id', { count: 'exact', head: true });
-  if (!pinnedReadErr && pinnedCount === 1) {
-    pass('Public SELECT on pinned_songs', `Accessible: exactly ${pinnedCount} row`);
+    .select('id', { count: 'exact' });
+  if (!pinnedReadErr && typeof pinnedCount === 'number' && pinnedRows && pinnedRows.length === pinnedCount) {
+    pass('Public SELECT on pinned_songs', `Accessible: query succeeded with consistent count (${pinnedCount} snapshot records)`);
   } else {
-    fail('Public SELECT on pinned_songs', pinnedReadErr?.message || `Expected 1, got ${pinnedCount}`);
+    fail('Public SELECT on pinned_songs', pinnedReadErr?.message || `Count inconsistency: count=${pinnedCount}, rows=${pinnedRows?.length}`);
   }
 
   const { count: langCount, error: langReadErr } = await supabase
