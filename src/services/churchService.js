@@ -19,9 +19,35 @@
 import { supabase } from '../utils/supabaseClient.js';
 
 // In-memory offline fallback cache for seamless UX
-let memoryChurches = [];
+let memoryChurches = [
+  {
+    id: 'jhf-vizianagaram',
+    name: 'Jesus Heals Fellowship',
+    slug: 'jesus-heals-fellowship',
+    city: 'Vizianagaram',
+    state_province: 'Andhra Pradesh',
+    country: 'India',
+    description: 'Jesus Heals Fellowship Church in Vizianagaram',
+    website_url: null,
+    logo_url: null,
+    is_public: false,
+    status: 'active',
+    verification_status: 'verified',
+    verification_notes: 'Founding workspace verified',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z'
+  }
+];
 let memoryMemberships = [];
 let memoryChurchFeatures = {};
+let memoryProfiles = [
+  { id: 'usr-admin-1', full_name: 'Platform Administrator', role: 'admin' },
+  { id: 'usr-admin-null', full_name: null, role: 'admin' },
+  { id: 'usr-user-null', full_name: null, role: 'user' },
+  { id: 'usr-pastor-1', full_name: 'Pastor Samuel', role: 'user' },
+  { id: 'usr-pastor-2', full_name: 'Pastor David', role: 'user' }
+];
+
 
 /**
  * Validates URL-safe church slug format
@@ -180,6 +206,13 @@ export async function fetchUserChurches(userId) {
  * @returns {Promise<{ success: boolean, data: Array, error?: string }>}
  */
 export async function fetchPublicDirectory(searchQuery = '') {
+  if (!supabase) {
+    const filtered = memoryChurches
+      .filter(c => c.is_public && c.status === 'active' && c.verification_status === 'verified')
+      .filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.city.toLowerCase().includes(searchQuery.toLowerCase()));
+    return { success: true, data: filtered, isFallback: true };
+  }
+
   try {
     let query = supabase
       .from('churches')
@@ -409,8 +442,27 @@ export async function updateChurchProfile(churchId, updates) {
 export async function fetchChurchMembers(churchId) {
   if (!churchId) return { success: false, data: [], error: 'Missing church ID.' };
 
+  if (!supabase) {
+    const mems = memoryMemberships
+      .filter(m => m.church_id === churchId)
+      .map(m => {
+        const prof = memoryProfiles.find(p => p.id === m.user_id) || null;
+        return {
+          ...m,
+          profile: prof
+            ? {
+                id: prof.id,
+                full_name: prof.full_name || null,
+                role: prof.role || null
+              }
+            : null
+        };
+      });
+    return { success: true, data: mems, isFallback: true };
+  }
+
   try {
-    const { data, error } = await supabase
+    const { data: memberships, error } = await supabase
       .from('church_memberships')
       .select(`
         id,
@@ -426,8 +478,113 @@ export async function fetchChurchMembers(churchId) {
 
     if (error) {
       console.warn('[churchService] fetchChurchMembers failed, using memory:', error.message);
-      const mems = memoryMemberships.filter(m => m.church_id === churchId);
+      const mems = memoryMemberships
+        .filter(m => m.church_id === churchId)
+        .map(m => {
+          const prof = memoryProfiles.find(p => p.id === m.user_id) || null;
+          return {
+            ...m,
+            profile: prof
+              ? {
+                  id: prof.id,
+                  full_name: prof.full_name || null,
+                  role: prof.role || null
+                }
+              : null
+          };
+        });
       return { success: true, data: mems, isFallback: true };
+    }
+
+    if (!memberships || memberships.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Resolve church-scoped member identities via hardened SECURITY DEFINER RPC
+    let profilesMap = {};
+    const { data: identities, error: identitiesError } = await supabase
+      .rpc('get_church_member_identities', { p_church_id: churchId });
+
+    if (!identitiesError && identities) {
+      identities.forEach(row => {
+        profilesMap[row.user_id] = {
+          id: row.user_id,
+          full_name: row.full_name || null,
+          role: row.platform_role || 'user'
+        };
+      });
+    } else if (identitiesError) {
+      console.warn('[churchService] get_church_member_identities RPC notice:', identitiesError.message);
+    }
+
+    const enriched = memberships.map(m => {
+      const prof = profilesMap[m.user_id] || null;
+      return {
+        ...m,
+        profile: prof
+          ? {
+              id: prof.id,
+              full_name: prof.full_name || null,
+              role: prof.role || null
+            }
+          : null
+      };
+    });
+
+    return { success: true, data: enriched };
+  } catch (err) {
+    console.warn('[churchService] fetchChurchMembers unexpected error, using memory:', err.message);
+    const mems = memoryMemberships
+      .filter(m => m.church_id === churchId)
+      .map(m => {
+        const prof = memoryProfiles.find(p => p.id === m.user_id) || null;
+        return {
+          ...m,
+          profile: prof
+            ? {
+                id: prof.id,
+                full_name: prof.full_name || null,
+                role: prof.role || null
+              }
+            : null
+        };
+      });
+    return { success: true, data: mems, isFallback: true };
+  }
+}
+
+/**
+ * Church Member Identity Resolution RPC Client
+ * Fetches church-scoped member identities (user_id, full_name, platform_role) via SECURITY DEFINER RPC.
+ * Enforces church tenant isolation; caller must be an active member of p_church_id or platform admin.
+ *
+ * @param {string} churchId - UUID of the target church workspace
+ * @returns {Promise<{ success: boolean, data: Array, error?: string }>}
+ */
+export async function getChurchMemberIdentities(churchId) {
+  if (!churchId || typeof churchId !== 'string') {
+    return { success: false, data: [], error: 'Valid church ID is required.' };
+  }
+
+  if (!supabase) {
+    const mems = memoryMemberships.filter(m => m.church_id === churchId);
+    const identities = mems.map(m => {
+      const prof = memoryProfiles.find(p => p.id === m.user_id) || null;
+      return {
+        user_id: m.user_id,
+        full_name: prof?.full_name || 'Unnamed user',
+        platform_role: prof?.role || 'user'
+      };
+    });
+    return { success: true, data: identities, isFallback: true };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .rpc('get_church_member_identities', { p_church_id: churchId });
+
+    if (error) {
+      return { success: false, data: [], error: error.message };
     }
 
     return { success: true, data: data || [] };
@@ -625,6 +782,10 @@ export async function updateChurchFeatureOverride(churchId, featureId, isEnabled
  * @returns {Promise<{ success: boolean, data: Array, error?: string }>}
  */
 export async function fetchAdminChurchesList() {
+  if (!supabase) {
+    return { success: true, data: memoryChurches, isFallback: true };
+  }
+
   try {
     const { data, error } = await supabase
       .from('churches')
@@ -652,7 +813,8 @@ export async function fetchAdminChurchesList() {
 
     return { success: true, data: data || [] };
   } catch (err) {
-    return { success: false, data: [], error: err.message };
+    console.warn('[churchService] fetchAdminChurchesList unexpected error, using memory:', err.message);
+    return { success: true, data: memoryChurches, isFallback: true };
   }
 }
 
@@ -709,5 +871,266 @@ export async function adminSetOperationalStatus(churchId, status) {
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Super Admin: Set church public directory visibility
+ * Updates strictly only the is_public field, isolating payload from other protected fields.
+ *
+ * @param {string} churchId - UUID of the target church
+ * @param {boolean} isPublic - Desired public directory visibility
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+export async function adminSetDirectoryVisibility(churchId, isPublic) {
+  if (!churchId || typeof churchId !== 'string') {
+    return { success: false, error: 'Valid church ID is required.' };
+  }
+
+  const payload = {
+    is_public: Boolean(isPublic),
+    updated_at: new Date().toISOString()
+  };
+
+  if (!supabase) {
+    const idx = memoryChurches.findIndex(c => c.id === churchId);
+    if (idx >= 0) {
+      memoryChurches[idx] = {
+        ...memoryChurches[idx],
+        is_public: Boolean(isPublic),
+        updated_at: new Date().toISOString()
+      };
+      return { success: true, isFallback: true };
+    }
+    return { success: false, error: 'Church workspace not found.' };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('churches')
+      .update(payload)
+      .eq('id', churchId);
+
+    if (error) return { success: false, error: error.message };
+
+    // Update in-memory fallback cache if active
+    const idx = memoryChurches.findIndex(c => c.id === churchId);
+    if (idx >= 0) {
+      memoryChurches[idx] = {
+        ...memoryChurches[idx],
+        is_public: Boolean(isPublic),
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    return { success: true };
+  } catch (err) {
+    const idx = memoryChurches.findIndex(c => c.id === churchId);
+    if (idx >= 0) {
+      memoryChurches[idx] = {
+        ...memoryChurches[idx],
+        is_public: Boolean(isPublic),
+        updated_at: new Date().toISOString()
+      };
+      return { success: true, isFallback: true };
+    }
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Super Admin: Assign an existing registered user as Pastor of an active church.
+ * Invokes the authoritative SECURITY DEFINER RPC: public.admin_assign_church_pastor(UUID, UUID).
+ * Does NOT directly execute INSERT/UPDATE on church_memberships from frontend code.
+ *
+ * @param {string} churchId - UUID of the target church workspace
+ * @param {string} userId - UUID of the registered platform user
+ * @returns {Promise<{ success: boolean, data?: Object, isFallback?: boolean, error?: string }>}
+ */
+export async function adminAssignChurchPastor(churchId, userId) {
+  if (!churchId || typeof churchId !== 'string') {
+    return { success: false, error: 'Valid church ID is required.' };
+  }
+  if (!userId || typeof userId !== 'string') {
+    return { success: false, error: 'Valid user ID is required.' };
+  }
+
+  if (!supabase) {
+    const nowIso = new Date().toISOString();
+    let assignedMembership;
+    const existingIdx = memoryMemberships.findIndex(m => m.church_id === churchId && m.user_id === userId);
+    if (existingIdx >= 0) {
+      memoryMemberships[existingIdx] = {
+        ...memoryMemberships[existingIdx],
+        role: 'pastor',
+        status: 'active',
+        updated_at: nowIso
+      };
+      assignedMembership = memoryMemberships[existingIdx];
+    } else {
+      assignedMembership = {
+        id: `mem-${Date.now()}`,
+        church_id: churchId,
+        user_id: userId,
+        role: 'pastor',
+        status: 'active',
+        created_at: nowIso,
+        updated_at: nowIso
+      };
+      memoryMemberships.push(assignedMembership);
+    }
+
+    // Demote all other active pastors for this church to active members (matching database RPC)
+    for (let i = 0; i < memoryMemberships.length; i++) {
+      const m = memoryMemberships[i];
+      if (m.church_id === churchId && m.user_id !== userId && m.role === 'pastor' && m.status === 'active') {
+        memoryMemberships[i] = {
+          ...m,
+          role: 'member',
+          status: 'active',
+          updated_at: nowIso
+        };
+      }
+    }
+
+    return { success: true, data: assignedMembership, isFallback: true };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('admin_assign_church_pastor', {
+      p_church_id: churchId,
+      p_user_id: userId
+    });
+
+    if (error) {
+      console.warn('[churchService] adminAssignChurchPastor RPC failed:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Super Admin: Search registered platform users for Pastor selection.
+ * Returns only the minimum safe profile fields: id, full_name, role.
+ * Never exposes passwords, auth tokens, or sensitive auth data.
+ *
+ * @param {string} [searchQuery=''] - Optional name search term
+ * @returns {Promise<{ success: boolean, data: Array, isFallback?: boolean, error?: string }>}
+ */
+export async function searchPlatformUsers(searchQuery = '') {
+  const trimmed = typeof searchQuery === 'string' ? searchQuery.trim() : '';
+
+  if (!supabase) {
+    const filtered = trimmed
+      ? memoryProfiles.filter(p => (p.full_name || '').toLowerCase().includes(trimmed.toLowerCase()))
+      : memoryProfiles;
+    return { success: true, data: filtered, isFallback: true };
+  }
+
+  try {
+    let query = supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .order('full_name', { ascending: true })
+      .limit(20);
+
+    if (trimmed) {
+      query = query.ilike('full_name', `%${trimmed}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn('[churchService] searchPlatformUsers failed, using fallback:', error.message);
+      const filtered = trimmed
+        ? memoryProfiles.filter(p => (p.full_name || '').toLowerCase().includes(trimmed.toLowerCase()))
+        : memoryProfiles;
+      return { success: true, data: filtered, isFallback: true };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (err) {
+    console.warn('[churchService] searchPlatformUsers unexpected error:', err.message);
+    const filtered = trimmed
+      ? memoryProfiles.filter(p => (p.full_name || '').toLowerCase().includes(trimmed.toLowerCase()))
+      : memoryProfiles;
+    return { success: true, data: filtered, isFallback: true };
+  }
+}
+
+/**
+ * Super Admin / Authorized Viewer: Get current active Pastor for a church workspace.
+ * Queries active pastor membership and resolves safe profile metadata.
+ *
+ * @param {string} churchId - UUID of the target church workspace
+ * @returns {Promise<{ success: boolean, data: Object|null, isFallback?: boolean, error?: string }>}
+ */
+export async function getChurchPastor(churchId) {
+  if (!churchId || typeof churchId !== 'string') {
+    return { success: false, data: null, error: 'Valid church ID is required.' };
+  }
+
+  if (!supabase) {
+    const mem = memoryMemberships.find(m => m.church_id === churchId && m.role === 'pastor' && m.status === 'active');
+    if (mem) {
+      const prof = memoryProfiles.find(p => p.id === mem.user_id) || null;
+      return { success: true, data: { ...mem, profile: prof }, isFallback: true };
+    }
+    return { success: true, data: null, isFallback: true };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('church_memberships')
+      .select(`
+        id,
+        church_id,
+        user_id,
+        role,
+        status,
+        created_at,
+        updated_at
+      `)
+      .eq('church_id', churchId)
+      .eq('role', 'pastor')
+      .eq('status', 'active')
+      // Defensive handling for legacy data; RPC demotion logic is the source of truth for pastor uniqueness
+      .order('updated_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.warn('[churchService] getChurchPastor query failed:', error.message);
+      const mem = memoryMemberships.find(m => m.church_id === churchId && m.role === 'pastor' && m.status === 'active');
+      if (mem) {
+        const prof = memoryProfiles.find(p => p.id === mem.user_id) || null;
+        return { success: true, data: { ...mem, profile: prof }, isFallback: true };
+      }
+      return { success: false, data: null, error: error.message };
+    }
+
+    const pastorMembership = data && data.length > 0 ? data[0] : null;
+    if (!pastorMembership) {
+      return { success: true, data: null };
+    }
+
+    // Fetch pastor's safe profile details
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .eq('id', pastorMembership.user_id)
+      .maybeSingle();
+
+    return {
+      success: true,
+      data: {
+        ...pastorMembership,
+        profile: profileData || null
+      }
+    };
+  } catch (err) {
+    return { success: false, data: null, error: err.message };
   }
 }

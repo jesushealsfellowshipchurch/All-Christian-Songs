@@ -20,6 +20,7 @@ import {
   Music
 } from 'lucide-react';
 import ChurchWorshipTab from './ChurchWorshipTab';
+import { useAuth } from '../../context/AuthContext';
 import { useChurch } from '../../context/ChurchContext';
 import { useFeatures } from '../../context/FeatureContext';
 import {
@@ -44,6 +45,8 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
     isChurchFeatureActive
   } = useChurch();
 
+  const { user, profile: authProfile } = useAuth();
+
   const churchList = activeChurches && activeChurches.length >= 0 ? activeChurches : (myChurches || []);
 
   const { isFeatureEnabled } = useFeatures();
@@ -54,6 +57,56 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Tab switcher that cleanly resets notices
+  const handleTabSwitch = (tab) => {
+    setActionError('');
+    setActionSuccess('');
+    setActiveTab(tab);
+  };
+
+  // Safely resolve member display name without exposing UUIDs or inventing names
+  const resolveMemberName = (m) => {
+    // 1. If member.profile already has full_name from public.profiles
+    if (m?.profile?.full_name && m.profile.full_name.trim()) {
+      return m.profile.full_name.trim();
+    }
+
+    // 2. If this is the current authenticated user, resolve from authenticated session/profile
+    if (user?.id && (m?.user_id === user.id || m?.profile?.id === user.id)) {
+      if (authProfile?.full_name && authProfile.full_name.trim()) {
+        return authProfile.full_name.trim();
+      }
+      const authMetaName = user.user_metadata?.full_name?.trim()
+        || user.user_metadata?.name?.trim()
+        || user.raw_user_meta_data?.full_name?.trim();
+      if (authMetaName) {
+        return authMetaName;
+      }
+      if (user.email) {
+        return user.email;
+      }
+    }
+
+    // 3. If target member is a platform admin and the current user is platform admin
+    if (m?.profile?.role === 'admin' && authProfile?.role === 'admin') {
+      if (authProfile?.full_name && authProfile.full_name.trim()) {
+        return authProfile.full_name.trim();
+      }
+      const authMetaName = user?.user_metadata?.full_name?.trim()
+        || user?.user_metadata?.name?.trim()
+        || user?.raw_user_meta_data?.full_name?.trim();
+      if (authMetaName) {
+        return authMetaName;
+      }
+      if (user?.email) {
+        return user.email;
+      }
+    }
+
+    // 4. Default fallback when no real name is available anywhere
+    return 'Unnamed user';
+  };
 
   // Settings form state (for Pastor)
   const [settingsForm, setSettingsForm] = useState({
@@ -122,6 +175,30 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
 
   // Handle member role change (Pastor only)
   const handleRoleChange = async (membershipId, newRole) => {
+    if (!membershipId || !newRole) return;
+
+    // Safety guard 1: Locate target member in current state
+    const targetMember = members.find(m => m.id === membershipId);
+    if (!targetMember) return;
+
+    // Safety guard 2: Strictly refuse role mutation for platform admins
+    if (targetMember.profile?.role === 'admin') {
+      console.warn('[ChurchWorkspaceModal] Safety Guard: Refusing role update for platform admin:', membershipId);
+      return;
+    }
+
+    // Safety guard 3: Refuse redundant execution if role is already the target role
+    if (targetMember.role === newRole) {
+      return;
+    }
+
+    // Safety guard 4: Explicit confirmation dialog to guarantee intentional user action
+    const roleName = newRole === 'worship_leader' ? 'Worship Leader' : newRole === 'pastor' ? 'Pastor' : 'Member';
+    const memberName = resolveMemberName(targetMember);
+    if (!window.confirm(`Are you sure you want to change ${memberName}'s church role to ${roleName}?`)) {
+      return;
+    }
+
     setIsSubmitting(true);
     setActionError('');
     setActionSuccess('');
@@ -137,6 +214,12 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
 
   // Handle member removal / leave
   const handleRemoveMember = async (membershipId, isSelf = false) => {
+    const targetMember = members.find(m => m.id === membershipId);
+    if (!isSelf && targetMember?.profile?.role === 'admin') {
+      console.warn('[ChurchWorkspaceModal] Safety Guard: Cannot remove platform admin from fellowship');
+      return;
+    }
+
     const confirmMsg = isSelf
       ? 'Are you sure you want to leave this church workspace?'
       : 'Are you sure you want to remove this member from the fellowship?';
@@ -252,7 +335,7 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
         {/* Role-Aware Navigation Tabs */}
         <div className="flex border-b border-slate-800 px-4 sm:px-6 bg-slate-900/50 gap-2 overflow-x-auto">
           <button
-            onClick={() => setActiveTab('overview')}
+            onClick={() => handleTabSwitch('overview')}
             className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 ${
               activeTab === 'overview'
                 ? 'border-amber-400 text-amber-400'
@@ -264,7 +347,7 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
 
           {/* Worship Tab: Repertoire & Song Collections */}
           <button
-            onClick={() => setActiveTab('worship')}
+            onClick={() => handleTabSwitch('worship')}
             className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'worship'
                 ? 'border-amber-400 text-amber-400'
@@ -278,7 +361,7 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
           {/* Roster tab: Available to Pastor and Worship Leader */}
           {(isPastor || isWorshipLeader) && (
             <button
-              onClick={() => setActiveTab('roster')}
+              onClick={() => handleTabSwitch('roster')}
               className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'roster'
                   ? 'border-amber-400 text-amber-400'
@@ -299,7 +382,7 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
           {isPastor && (
             <>
               <button
-                onClick={() => setActiveTab('settings')}
+                onClick={() => handleTabSwitch('settings')}
                 className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'settings'
                     ? 'border-amber-400 text-amber-400'
@@ -311,7 +394,7 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
               </button>
 
               <button
-                onClick={() => setActiveTab('features')}
+                onClick={() => handleTabSwitch('features')}
                 className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'features'
                     ? 'border-amber-400 text-amber-400'
@@ -410,7 +493,7 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
                 onClose();
                 if (onSelectSong) onSelectSong(song);
               }}
-              onNavigateToFeatures={() => setActiveTab('features')}
+              onNavigateToFeatures={() => handleTabSwitch('features')}
             />
           )}
 
@@ -426,30 +509,56 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
                     <span>Pending Join Requests ({pendingMembers.length})</span>
                   </h3>
                   <div className="divide-y divide-slate-800 rounded-2xl bg-slate-800/40 border border-slate-700/60 overflow-hidden">
-                    {pendingMembers.map(m => (
-                      <div key={m.id} className="p-3.5 flex items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">User ID: {m.user_id.slice(0, 8)}...</p>
-                          <p className="text-xs text-slate-400">Requested: {new Date(m.created_at).toLocaleDateString()}</p>
+                    {pendingMembers.map(m => {
+                      const isAdmin = m.profile?.role === 'admin';
+                      const churchRoleFormatted = m.role === 'pastor'
+                        ? 'Pastor'
+                        : m.role === 'worship_leader'
+                        ? 'Worship Leader'
+                        : 'Member';
+                      const primaryRole = isAdmin ? 'Admin' : churchRoleFormatted;
+
+                      return (
+                        <div key={m.id} className="p-3.5 flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-white truncate">
+                                {resolveMemberName(m)}
+                              </p>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                                isAdmin
+                                  ? 'text-amber-300 bg-amber-500/15 border border-amber-500/30'
+                                  : 'text-slate-300 bg-slate-800 border border-slate-700'
+                              }`}>
+                                {primaryRole}
+                              </span>
+                            </div>
+                            {isAdmin && (
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Church role: <span className="text-slate-300 font-medium">{churchRoleFormatted}</span>
+                              </p>
+                            )}
+                            <p className="text-xs text-slate-400 mt-0.5">Requested: {new Date(m.created_at).toLocaleDateString()}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => handleStatusChange(m.id, 'active')}
+                              disabled={isSubmitting}
+                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition flex items-center gap-1"
+                            >
+                              <Check className="w-3.5 h-3.5" /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleRemoveMember(m.id)}
+                              disabled={isSubmitting}
+                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                            >
+                              Decline
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => handleStatusChange(m.id, 'active')}
-                            disabled={isSubmitting}
-                            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition flex items-center gap-1"
-                          >
-                            <Check className="w-3.5 h-3.5" /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleRemoveMember(m.id)}
-                            disabled={isSubmitting}
-                            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -471,45 +580,83 @@ export default function ChurchWorkspaceModal({ isOpen, onClose, onOpenMyChurches
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-800 rounded-2xl bg-slate-800/40 border border-slate-800 overflow-hidden">
-                    {activeMembers.map(m => (
-                      <div key={m.id} className="p-3.5 flex items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">Member ({m.user_id.slice(0, 8)})</p>
-                          <p className="text-xs text-slate-400">Joined: {new Date(m.created_at).toLocaleDateString()}</p>
-                        </div>
+                    {activeMembers.map(m => {
+                      const isAdmin = m.profile?.role === 'admin';
+                      const churchRoleFormatted = m.role === 'pastor'
+                        ? 'Pastor'
+                        : m.role === 'worship_leader'
+                        ? 'Worship Leader'
+                        : 'Member';
+                      const primaryRole = isAdmin ? 'Admin' : churchRoleFormatted;
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          {/* Pastor can change roles; Worship Leader sees read-only badge */}
-                          {isPastor ? (
-                            <select
-                              value={m.role}
-                              onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                              disabled={isSubmitting}
-                              className="text-xs font-semibold bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-400"
-                            >
-                              <option value="member">Member</option>
-                              <option value="worship_leader">Worship Leader</option>
-                              <option value="pastor">Pastor</option>
-                            </select>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-800 text-amber-300 border border-slate-700 capitalize">
-                              {m.role.replace('_', ' ')}
-                            </span>
-                          )}
+                      return (
+                        <div key={m.id} className="p-3.5 flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-white truncate">
+                                {resolveMemberName(m)}
+                              </p>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                                isAdmin
+                                  ? 'text-amber-300 bg-amber-500/15 border border-amber-500/30'
+                                  : m.role === 'pastor'
+                                  ? 'text-purple-300 bg-purple-500/15 border border-purple-500/30'
+                                  : m.role === 'worship_leader'
+                                  ? 'text-blue-300 bg-blue-500/15 border border-blue-500/30'
+                                  : 'text-slate-300 bg-slate-800 border border-slate-700'
+                              }`}>
+                                {primaryRole}
+                              </span>
+                            </div>
 
-                          {isPastor && (
-                            <button
-                              onClick={() => handleRemoveMember(m.id)}
-                              disabled={isSubmitting}
-                              title="Remove member"
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-                            >
-                              <UserX className="w-4 h-4" />
-                            </button>
-                          )}
+                            {isAdmin && (
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Church role: <span className="text-slate-300 font-medium">{churchRoleFormatted}</span>
+                              </p>
+                            )}
+
+                            <p className="text-xs text-slate-400 mt-0.5">Joined: {new Date(m.created_at).toLocaleDateString()}</p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Pastor can change roles for non-admin members; platform admin is presented as Admin */}
+                            {isPastor && !isAdmin ? (
+                              <select
+                                value={m.role}
+                                onChange={(e) => handleRoleChange(m.id, e.target.value)}
+                                disabled={isSubmitting}
+                                aria-label={`Change church role for ${resolveMemberName(m)}`}
+                                className="text-xs font-semibold bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                              >
+                                <option value="member">Member</option>
+                                <option value="worship_leader">Worship Leader</option>
+                                <option value="pastor">Pastor</option>
+                              </select>
+                            ) : (
+                              <span className={`px-2.5 py-1 rounded-xl text-xs font-semibold border ${
+                                isAdmin
+                                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                                  : 'bg-slate-800 text-amber-300 border border-slate-700'
+                              }`}>
+                                {primaryRole}
+                              </span>
+                            )}
+
+                            {isPastor && !isAdmin && (
+                              <button
+                                onClick={() => handleRemoveMember(m.id)}
+                                disabled={isSubmitting}
+                                title={`Remove ${resolveMemberName(m)}`}
+                                aria-label={`Remove ${resolveMemberName(m)}`}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                              >
+                                <UserX className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
